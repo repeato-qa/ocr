@@ -1,0 +1,136 @@
+:root {
+  color-scheme: light;
+  --paper: #f4efe6;
+  --paper-deep: #e7dcc9;
+  --ink: #1a1712;
+  --accent: #0c6d62;
+  --accent-strong: #084c45;
+  --panel: rgba(255, 252, 246, 0.84);
+  --border: rgba(26, 23, 18, 0.12);
+  --shadow: 0 24px 70px rgba(26, 23, 18, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: 'Iowan Old Style', 'Palatino Linotype', serif;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at top left, rgba(12, 109, 98, 0.2), transparent 32%),
+    radial-gradient(circle at right, rgba(153, 103, 39, 0.18), transparent 28%),
+    linear-gradient(180deg, var(--paper), var(--paper-deep));
+}
+
+.app-shell {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 24px 56px;
+}
+
+.hero {
+  max-width: 700px;
+}
+
+.eyebrow {
+  margin: 0 0 12px;
+  font-family: 'Avenir Next Condensed', 'Franklin Gothic Medium', sans-serif;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent-strong);
+}
+
+h1,
+h2 {
+  margin: 0;
+  font-weight: 600;
+}
+
+h1 {
+  font-size: clamp(2.2rem, 5vw, 4.4rem);
+  line-height: 0.95;
+}
+
+.summary {
+  max-width: 58ch;
+  font-size: 1.05rem;
+  line-height: 1.5;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 28px 0;
+}
+
+button {
+  border: 0;
+  border-radius: 999px;
+  padding: 12px 18px;
+  font: inherit;
+  color: #fffefb;
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: transform 140ms ease, opacity 140ms ease;
+}
+
+button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.panel {
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  background: var(--panel);
+  backdrop-filter: blur(12px);
+  box-shadow: var(--shadow);
+}
+
+.compare-panel {
+  margin-top: 16px;
+}
+
+#preview-image {
+  display: none;
+  width: 100%;
+  margin-top: 16px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+}
+
+pre,
+p {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+pre {
+  min-height: 140px;
+  margin-bottom: 0;
+  font-family: 'SF Mono', 'Menlo', monospace;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 640px) {
+  .app-shell {
+    padding: 24px 16px 40px;
+  }
+}

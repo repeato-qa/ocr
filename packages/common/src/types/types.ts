@@ -58,6 +58,10 @@ export type Dictionary = string[]
 
 export type Point = [x: number, y: number]
 
+export type BinarySource = string | URL | ArrayBuffer | Uint8Array
+
+export type TextSource = string | URL | ArrayBuffer | Uint8Array
+
 export interface ModelBaseConstructorArg {
   model: InferenceSession
   options: ModelBaseOptions
@@ -70,9 +74,9 @@ export interface ModelBaseOptions {
 
 export interface ModelCreateOptions extends ModelBaseOptions {
   models?: {
-    detectionPath: string
-    recognitionPath: string
-    dictionaryPath: string
+    detectionPath: BinarySource
+    recognitionPath: BinarySource
+    dictionaryPath: TextSource
   }
   onnxOptions?: InferenceSession.SessionOptions
 }

@@ -1,7 +1,7 @@
 import type { InferenceSession as InferenceSessionCommon, Tensor } from 'onnxruntime-common'
 import invariant from 'tiny-invariant'
 import { FileUtils, InferenceSession, defaultModels } from '#common/backend'
-import type { Dictionary, Line, LineImage, ModelBaseConstructorArg, ModelCreateOptions } from '#common/types'
+import type { BinarySource, Dictionary, Line, LineImage, ModelBaseConstructorArg, ModelCreateOptions } from '#common/types'
 import { ModelBase } from './ModelBase'
 
 export class Recognition extends ModelBase {
@@ -12,7 +12,7 @@ export class Recognition extends ModelBase {
     invariant(recognitionPath, 'recognitionPath is required')
     const dictionaryPath = models?.dictionaryPath || defaultModels?.dictionaryPath
     invariant(dictionaryPath, 'dictionaryPath is required')
-    const model = await InferenceSession.create(recognitionPath, onnxOptions)
+    const model = await InferenceSession.create(normalizeBinarySource(recognitionPath), onnxOptions)
     const dictionaryText = await FileUtils.read(dictionaryPath)
     const dictionary = [...dictionaryText.split('\n'), ' ']
     return new Recognition({ model, options: restOptions }, dictionary)
@@ -215,3 +215,10 @@ function groupBoxesByMidlineDifference(boxes: BoxType[]): BoxType[][] {
 
 type pointType = [number, number]
 type BoxType = [pointType, pointType, pointType, pointType]
+
+function normalizeBinarySource(source: BinarySource) {
+  if (source instanceof URL) {
+    return source.toString()
+  }
+  return source
+}

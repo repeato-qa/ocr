@@ -23,6 +23,12 @@ def 'main browser example' [] {
   ./ake start
 }
 
+# Run Electron example
+def 'main electron example' [] {
+  cd packages/electron/example
+  ./ake start
+}
+
 # Run ReactNative example
 def 'main react-native example' [] {
   cd packages/react-native/example

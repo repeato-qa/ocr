@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Electron OCR Example</title>
+    <link href="./index.css" type="text/css" rel="stylesheet" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="hero">
+        <p class="eyebrow">Electron Bundle</p>
+        <h1>Compare OCR in the renderer and the main thread.</h1>
+        <p class="summary">
+          The same bundled assets are loaded from disk for both modes so you can compare latency without a dev server.
+        </p>
+      </section>
+      <section class="controls">
+        <button id="pick-image" type="button">Choose Image</button>
+        <button id="run-renderer" type="button" disabled>Run Renderer</button>
+        <button id="run-main" type="button" disabled>Run Main</button>
+        <button id="run-compare" type="button" disabled>Compare Both</button>
+      </section>
+      <section class="status-grid">
+        <div class="panel">
+          <h2>Selection</h2>
+          <p id="selected-image">No image selected.</p>
+          <img id="preview-image" alt="Selected input" />
+        </div>
+        <div class="panel">
+          <h2>Renderer</h2>
+          <p id="renderer-status">Idle</p>
+          <pre id="renderer-output"></pre>
+        </div>
+        <div class="panel">
+          <h2>Main Thread</h2>
+          <p id="main-status">Idle</p>
+          <pre id="main-output"></pre>
+        </div>
+      </section>
+      <section class="panel compare-panel">
+        <h2>Comparison</h2>
+        <pre id="compare-output">Run both modes to compare results.</pre>
+      </section>
+    </main>
+    <script type="module" src="./renderer.js"></script>
+  </body>
+  </html>

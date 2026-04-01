@@ -179,3 +179,5 @@ dist
 
 # Local Netlify folder
 .netlify
+
+node-native-ocr

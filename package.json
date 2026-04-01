@@ -5,6 +5,7 @@
     "packages/browser",
     "packages/browser/example",
     "packages/common",
+    "packages/electron/example",
     "packages/models",
     "packages/node",
     "packages/node/example",

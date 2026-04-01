@@ -1,0 +1,22 @@
+{
+  "name": "electron-example",
+  "private": true,
+  "type": "module",
+  "main": "./build/main.cjs",
+  "scripts": {
+    "build": "node ./build.mjs",
+    "start": "npm run build && electron .",
+    "benchmark": "npm run build && electron . --benchmark ./build/assets/cn-01.jpg --iterations 3",
+    "benchmark:main": "npm run build && electron . --benchmark ./build/assets/cn-01.jpg --iterations 3 --mode main",
+    "benchmark:renderer": "npm run build && electron . --benchmark ./build/assets/cn-01.jpg --iterations 3 --mode renderer",
+    "test:assets": "npm run build && node --test ./tests/ocr-assets.test.mjs",
+    "test:smoke": "npm run build && electron . --smoke ./build/assets/cn-01.jpg",
+    "test:smoke:main": "npm run build && electron . --smoke ./build/assets/cn-01.jpg --mode main",
+    "test:smoke:renderer": "npm run build && electron . --smoke ./build/assets/cn-01.jpg --mode renderer"
+  },
+  "dependencies": {
+    "electron": "^36.0.0",
+    "esbuild": "^0.25.3",
+    "onnxruntime-web": "^1.17.3"
+  }
+}

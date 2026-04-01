@@ -36,6 +36,13 @@ const ocr = await Ocr.create({
 const result = await ocr.detect('/a.jpg')
 ```
 
+### Electron
+
+> [Example](./packages/electron/example/README.md)
+
+Use `@gutenye/ocr-node` in the Electron main process and `@gutenye/ocr-browser` in the renderer.
+The renderer can now load bundled model bytes directly, which makes self-contained Electron bundles possible without an HTTP server.
+
 ### React Native
 
 > [Example](./packages/react-native/example/README.md)

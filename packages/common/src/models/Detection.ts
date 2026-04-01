@@ -1,7 +1,7 @@
 import type { InferenceSession as InferenceSessionCommon, Tensor } from 'onnxruntime-common'
 import invariant from 'tiny-invariant'
 import { ImageRaw, InferenceSession, defaultModels, splitIntoLineImages } from '#common/backend'
-import type { ImageRawData, ImageRaw as ImageRawType, ModelCreateOptions, Size } from '#common/types'
+import type { BinarySource, ImageRawData, ImageRaw as ImageRawType, ModelCreateOptions, Size } from '#common/types'
 import { ModelBase } from './ModelBase'
 
 const BASE_SIZE = 32
@@ -10,7 +10,7 @@ export class Detection extends ModelBase {
   static async create({ models, onnxOptions = {}, ...restOptions }: ModelCreateOptions) {
     const detectionPath = models?.detectionPath || defaultModels?.detectionPath
     invariant(detectionPath, 'detectionPath is required')
-    const model = await InferenceSession.create(detectionPath, onnxOptions)
+    const model = await InferenceSession.create(normalizeBinarySource(detectionPath), onnxOptions)
     return new Detection({ model, options: restOptions })
   }
 
@@ -88,4 +88,11 @@ function outputToImage(output: Tensor, threshold: number): ImageRawType {
     data[n + 3] = 255 // A
   }
   return new ImageRaw({ data, width, height })
+}
+
+function normalizeBinarySource(source: BinarySource) {
+  if (source instanceof URL) {
+    return source.toString()
+  }
+  return source
 }
