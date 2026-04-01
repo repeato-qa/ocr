@@ -183,6 +183,25 @@ async function ensureOnnxRuntimeBinding(currentStageDir) {
     )
   }
 
+  try {
+    await fs.access(bindingPath)
+    return
+  } catch {
+    run(
+      'node',
+      [
+        './node_modules/onnxruntime-node/script/build',
+        '--rebuild',
+        `--arch=${process.arch}`,
+      ],
+      {
+        cwd: currentStageDir,
+        env: getSpawnEnv(),
+      },
+      'Build ONNX Runtime native binding from source',
+    )
+  }
+
   await fs.access(bindingPath)
 }
 
