@@ -20,6 +20,12 @@ npm run benchmark
 npm run test:smoke
 ```
 
+## Packaged Smoke Test
+
+```sh
+npm run test:smoke:packaged
+```
+
 ## Asset Regression Tests
 
 ```sh

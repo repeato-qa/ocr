@@ -1,0 +1,62 @@
+name: Build Electron Package
+
+on:
+  push:
+    branches:
+      - main
+      - electron-support
+  pull_request:
+  workflow_dispatch:
+
+env:
+  OMP_THREAD_LIMIT: '1'
+  OMP_NUM_THREADS: '1'
+
+jobs:
+  build-electron:
+    name: ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux-x64
+          - os: windows-latest
+            target: win32-x64
+          - os: macos-13
+            target: darwin-x64
+          - os: macos-14
+            target: darwin-arm64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install workspace dependencies
+        run: npm install
+
+      - name: Run Electron asset regression tests
+        run: npm run -w packages/electron/example test:assets
+
+      - name: Package Electron app
+        run: npm run -w packages/electron/example package
+
+      - name: Run packaged Electron smoke test (Linux)
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npm run -w packages/electron/example test:smoke:packaged
+
+      - name: Run packaged Electron smoke test
+        if: runner.os != 'Linux'
+        run: npm run -w packages/electron/example test:smoke:packaged
+
+      - name: Upload packaged artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gutenocr-electron-${{ matrix.target }}
+          path: temp/electron-example-package/dist/

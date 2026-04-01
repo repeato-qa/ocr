@@ -12,6 +12,7 @@ const localAlias = {
   '@gutenye/ocr-browser': path.join(workspaceRoot, 'packages/browser/src/index.ts'),
   '@gutenye/ocr-node': path.join(workspaceRoot, 'packages/node/src/index.ts'),
   '@gutenye/ocr-common': path.join(workspaceRoot, 'packages/common/src/index.ts'),
+  '@gutenye/ocr-models/node': path.join(rootDir, 'stubs/default-models.js'),
   '@gutenye/ocr-common/splitIntoLineImages': path.join(
     workspaceRoot,
     'packages/common/src/backend/splitIntoLineImages.ts',
@@ -34,7 +35,7 @@ await Promise.all([
     platform: 'node',
     format: 'cjs',
     target: 'node20',
-    external: ['electron', 'onnxruntime-node', 'sharp', '@gutenye/ocr-models/node'],
+    external: ['electron', 'onnxruntime-node', 'sharp'],
     alias: localAlias,
     tsconfig: path.join(workspaceRoot, 'tsconfig.json'),
   }),
@@ -64,6 +65,7 @@ await Promise.all([
 await fs.copyFile(path.join(rootDir, 'index.html'), path.join(outdir, 'index.html'))
 await fs.copyFile(path.join(rootDir, 'index.css'), path.join(outdir, 'index.css'))
 await fs.cp(path.join(workspaceRoot, 'assets'), assetsDir, { recursive: true })
+await fs.cp(path.join(rootDir, 'test-assets'), path.join(outdir, 'test-assets'), { recursive: true })
 await fs.mkdir(wasmDir, { recursive: true })
 
 const ortDistDir = path.join(workspaceRoot, 'node_modules', 'onnxruntime-web', 'dist')
