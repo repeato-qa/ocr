@@ -15,11 +15,12 @@ const electronBinary = path.join(
   '.bin',
   process.platform === 'win32' ? 'electron.cmd' : 'electron',
 )
+const electronArgsPrefix = process.platform === 'linux' ? ['--no-sandbox'] : []
 
 async function runMainBenchmark(imagePath) {
   const { stdout, stderr } = await execFileAsync(
     electronBinary,
-    ['.', '--benchmark', imagePath, '--iterations', '1', '--mode', 'main'],
+    [...electronArgsPrefix, '.', '--benchmark', imagePath, '--iterations', '1', '--mode', 'main'],
     { cwd: packageDir, maxBuffer: 10 * 1024 * 1024 },
   )
 

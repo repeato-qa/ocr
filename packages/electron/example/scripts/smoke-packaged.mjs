@@ -12,11 +12,14 @@ const metadata = JSON.parse(fs.readFileSync(path.join(tempRoot, 'metadata.json')
 
 const executablePath = resolveExecutablePath(metadata)
 const bundledFixturePath = resolveBundledFixturePath(metadata)
+const executableArgs = process.platform === 'linux'
+  ? ['--no-sandbox', '--smoke', bundledFixturePath, '--mode', 'main']
+  : ['--smoke', bundledFixturePath, '--mode', 'main']
 
 assert.ok(fs.existsSync(executablePath), `Missing packaged executable at ${executablePath}`)
 assert.ok(fs.existsSync(bundledFixturePath), `Missing bundled smoke fixture at ${bundledFixturePath}`)
 
-const result = spawnSync(executablePath, ['--smoke', bundledFixturePath, '--mode', 'main'], {
+const result = spawnSync(executablePath, executableArgs, {
   encoding: 'utf8',
   env: {
     ...getSpawnEnv(),
