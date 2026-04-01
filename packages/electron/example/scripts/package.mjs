@@ -71,6 +71,8 @@ run(
   'Rebuild native Electron dependencies',
 )
 
+await ensureOnnxRuntimeBinding(stageDir)
+
 run(
   'npx',
   [
@@ -137,6 +139,51 @@ function getSpawnEnv() {
     env[key] = process.env[key]
   }
   return env
+}
+
+async function ensureOnnxRuntimeBinding(currentStageDir) {
+  const bindingPath = path.join(
+    currentStageDir,
+    'node_modules',
+    'onnxruntime-node',
+    'bin',
+    'napi-v6',
+    process.platform,
+    process.arch,
+    'onnxruntime_binding.node',
+  )
+
+  try {
+    await fs.access(bindingPath)
+    return
+  } catch {
+    run(
+      'npm',
+      ['rebuild', 'onnxruntime-node'],
+      {
+        cwd: currentStageDir,
+        env: getSpawnEnv(),
+      },
+      'Rebuild ONNX Runtime native binding',
+    )
+  }
+
+  try {
+    await fs.access(bindingPath)
+    return
+  } catch {
+    run(
+      'node',
+      ['./node_modules/onnxruntime-node/script/install'],
+      {
+        cwd: currentStageDir,
+        env: getSpawnEnv(),
+      },
+      'Install ONNX Runtime native binding',
+    )
+  }
+
+  await fs.access(bindingPath)
 }
 
 function run(command, args, options, title) {
