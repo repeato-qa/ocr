@@ -90,6 +90,9 @@ jobs:
           node-version: 22.14.0
           registry-url: https://registry.npmjs.org
 
+      - name: Upgrade npm for trusted publishing
+        run: npm install --global npm@11.5.1
+
       - name: Install workspace dependencies
         run: npm install
 
