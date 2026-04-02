@@ -36,8 +36,11 @@ const result = spawnSync(executablePath, executableArgs, {
     OMP_NUM_THREADS: '1',
     ...(process.platform === 'linux'
       ? {
+          G_DEBUG: '',
+          G_ENABLE_DIAGNOSTIC: '0',
           GTK_A11Y: 'none',
           NO_AT_BRIDGE: '1',
+          ELECTRON_OZONE_PLATFORM: 'x11',
         }
       : {}),
   },
