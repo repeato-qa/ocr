@@ -94,6 +94,24 @@ function parseArgs(argv: string[]) {
   return { benchmarkImage, smokeImage, iterations, mode }
 }
 
+function shouldUseMainThreadCliMode(args: ReturnType<typeof parseArgs>) {
+  return Boolean((args.benchmarkImage || args.smokeImage) && args.mode === 'main')
+}
+
+function configureCliMode(args: ReturnType<typeof parseArgs>) {
+  if (!shouldUseMainThreadCliMode(args)) {
+    return
+  }
+
+  app.disableHardwareAcceleration()
+
+  if (process.platform === 'linux') {
+    app.commandLine.appendSwitch('disable-gpu')
+    app.commandLine.appendSwitch('disable-software-rasterizer')
+    app.commandLine.appendSwitch('disable-dev-shm-usage')
+  }
+}
+
 function formatDetection({ durationMs, texts }: DetectionResult) {
   return [`${durationMs.toFixed(1)}ms`, ...texts.map((line) => `${line.mean.toFixed(2)} ${line.text}`)].join('\n')
 }
@@ -216,6 +234,8 @@ async function runCliMode(args: ReturnType<typeof parseArgs>) {
 
 async function main() {
   const args = parseArgs(process.argv)
+
+  configureCliMode(args)
 
   ipcMain.handle('ocr:detect-main', async (_event, imagePath: string) => {
     return await detectInMain(imagePath)

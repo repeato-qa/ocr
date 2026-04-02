@@ -35,7 +35,10 @@ if (result.error) {
 if (result.status !== 0) {
   process.stderr.write(result.stdout || '')
   process.stderr.write(result.stderr || '')
-  throw new Error(`Packaged smoke test failed with exit code ${String(result.status)}`)
+  const failureReason = result.signal === null
+    ? `exit code ${String(result.status)}`
+    : `signal ${result.signal}`
+  throw new Error(`Packaged smoke test failed with ${failureReason}`)
 }
 
 const output = `${result.stdout || ''}${result.stderr || ''}`
