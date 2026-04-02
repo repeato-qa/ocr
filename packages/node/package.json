@@ -8,7 +8,7 @@
     "onnxruntime",
     "node"
   ],
-  "version": "1.5.1",
+  "version": "1.5.2",
   "type": "module",
   "license": "MIT",
   "repository": {
@@ -39,13 +39,12 @@
     "!**/__tests__"
   ],
   "scripts": {
-    "build": "rm -rf build && npx --no-install tsc --project tsconfig.build.json && npx --no-install tsc-alias --project tsconfig.build.json",
+    "build": "rm -rf build && npx --no-install tsc --project tsconfig.build.json && npx --no-install tsc-alias --project tsconfig.build.json && node ./scripts/copy-model-assets.mjs",
     "prepublishOnly": "cp ../../README.md . && npm run build",
     "postpublish": "rm README.md && rm -rf build"
   },
   "dependencies": {
     "@gutenye/ocr-common": "^1.2.0",
-    "@gutenye/ocr-models": "^1.2.2",
     "onnxruntime-node": "1.22.0-rev",
     "sharp": "^0.34.3"
   }

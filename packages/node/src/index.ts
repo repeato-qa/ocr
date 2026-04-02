@@ -1,8 +1,8 @@
 import fs from 'node:fs/promises'
 import BaseOcr, { registerBackend, type ModelCreateOptions } from '@gutenye/ocr-common'
 import { splitIntoLineImages } from '@gutenye/ocr-common/splitIntoLineImages'
-import defaultModels from '@gutenye/ocr-models/node'
 import { InferenceSession } from 'onnxruntime-node'
+import defaultModels from './defaultModels'
 import { FileUtils } from './FileUtils'
 import { ImageRaw } from './ImageRaw'
 
