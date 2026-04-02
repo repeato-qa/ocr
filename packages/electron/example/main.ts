@@ -232,10 +232,38 @@ async function runCliMode(args: ReturnType<typeof parseArgs>) {
   return true
 }
 
+async function runMainThreadCliMode(args: ReturnType<typeof parseArgs>) {
+  const imagePath = args.benchmarkImage || args.smokeImage
+  if (!imagePath || !shouldUseMainThreadCliMode(args)) {
+    return false
+  }
+
+  await ensureAssetsReady()
+
+  if (args.smokeImage) {
+    const result = await detectInMain(imagePath)
+    if (!result.texts.length) {
+      throw new Error('Main thread OCR returned no text lines.')
+    }
+    console.log(formatDetection(result))
+    app.exit(0)
+    return true
+  }
+
+  const benchmarkResult = await runMainBenchmark(imagePath, args.iterations)
+  console.log(JSON.stringify({ main: benchmarkResult }, null, 2))
+  app.exit(0)
+  return true
+}
+
 async function main() {
   const args = parseArgs(process.argv)
 
   configureCliMode(args)
+
+  if (await runMainThreadCliMode(args)) {
+    return
+  }
 
   ipcMain.handle('ocr:detect-main', async (_event, imagePath: string) => {
     return await detectInMain(imagePath)
