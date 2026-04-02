@@ -12,10 +12,17 @@ const metadata = JSON.parse(fs.readFileSync(path.join(tempRoot, 'metadata.json')
 
 const executablePath = resolveExecutablePath(metadata)
 const bundledFixturePath = resolveBundledFixturePath(metadata)
-const executableArgs = process.platform === "linux" ? ["--headless", "--no-sandbox", "--disable-gpu", "--disable-software-rasterizer", "--disable-dev-shm-usage", "--smoke", bundledFixturePath, "--mode", "main"] : ["--smoke", bundledFixturePath, "--mode", "main"];
+const smokeScriptPath = resolvePackagedSmokeScriptPath(metadata)
+const linuxRunAsNode = process.platform === 'linux'
+const executableArgs = linuxRunAsNode
+  ? [smokeScriptPath, bundledFixturePath]
+  : ['--smoke', bundledFixturePath, '--mode', 'main']
 
 assert.ok(fs.existsSync(executablePath), `Missing packaged executable at ${executablePath}`)
 assert.ok(fs.existsSync(bundledFixturePath), `Missing bundled smoke fixture at ${bundledFixturePath}`)
+if (linuxRunAsNode) {
+  assert.ok(fs.existsSync(smokeScriptPath), `Missing packaged smoke script at ${smokeScriptPath}`)
+}
 
 const result = spawnSync(executablePath, executableArgs, {
   encoding: 'utf8',
@@ -25,11 +32,7 @@ const result = spawnSync(executablePath, executableArgs, {
     OMP_NUM_THREADS: '1',
     ...(process.platform === 'linux'
       ? {
-          G_DEBUG: '',
-          G_ENABLE_DIAGNOSTIC: '0',
-          GTK_A11Y: 'none',
-          NO_AT_BRIDGE: '1',
-          ELECTRON_OZONE_PLATFORM: 'x11',
+          ELECTRON_RUN_AS_NODE: '1',
         }
       : {}),
   },
@@ -84,6 +87,23 @@ function resolveBundledFixturePath(currentMetadata) {
   }
 
   return path.join(appDir, 'resources', 'app', 'build', 'test-assets', 'login-screen.jpeg')
+}
+
+function resolvePackagedSmokeScriptPath(currentMetadata) {
+  const appDir = currentMetadata.packagedAppDir
+  if (currentMetadata.platform === 'darwin') {
+    return path.join(
+      appDir,
+      `${currentMetadata.productName}.app`,
+      'Contents',
+      'Resources',
+      'app',
+      'build',
+      'smoke-node.cjs',
+    )
+  }
+
+  return path.join(appDir, 'resources', 'app', 'build', 'smoke-node.cjs')
 }
 
 function getSpawnEnv() {

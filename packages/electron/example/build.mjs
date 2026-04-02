@@ -58,6 +58,17 @@ await Promise.all([
     alias: rendererAlias,
     tsconfig: path.join(workspaceRoot, 'tsconfig.json'),
   }),
+  build({
+    entryPoints: [path.join(rootDir, 'smoke-node.ts')],
+    outfile: path.join(outdir, 'smoke-node.cjs'),
+    bundle: true,
+    platform: 'node',
+    format: 'cjs',
+    target: 'node20',
+    external: ['onnxruntime-node', 'sharp'],
+    alias: localAlias,
+    tsconfig: path.join(workspaceRoot, 'tsconfig.json'),
+  }),
 ])
 
 await fs.copyFile(path.join(rootDir, 'index.html'), path.join(outdir, 'index.html'))
