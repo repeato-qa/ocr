@@ -13,7 +13,16 @@ const metadata = JSON.parse(fs.readFileSync(path.join(tempRoot, 'metadata.json')
 const executablePath = resolveExecutablePath(metadata)
 const bundledFixturePath = resolveBundledFixturePath(metadata)
 const executableArgs = process.platform === 'linux'
-  ? ['--no-sandbox', '--smoke', bundledFixturePath, '--mode', 'main']
+  ? [
+      '--no-sandbox',
+      '--disable-gpu',
+      '--disable-software-rasterizer',
+      '--disable-dev-shm-usage',
+      '--smoke',
+      bundledFixturePath,
+      '--mode',
+      'main',
+    ]
   : ['--smoke', bundledFixturePath, '--mode', 'main']
 
 assert.ok(fs.existsSync(executablePath), `Missing packaged executable at ${executablePath}`)
@@ -25,6 +34,12 @@ const result = spawnSync(executablePath, executableArgs, {
     ...getSpawnEnv(),
     OMP_THREAD_LIMIT: '1',
     OMP_NUM_THREADS: '1',
+    ...(process.platform === 'linux'
+      ? {
+          GTK_A11Y: 'none',
+          NO_AT_BRIDGE: '1',
+        }
+      : {}),
   },
 })
 
