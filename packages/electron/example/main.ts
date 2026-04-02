@@ -2,7 +2,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { app, BrowserWindow, dialog, ipcMain } from 'electron'
-import Ocr from "@repeato/ocr/electron";
+import Ocr from '@repeato/ocr'
 
 type BenchmarkMode = 'main' | 'renderer' | 'compare'
 
