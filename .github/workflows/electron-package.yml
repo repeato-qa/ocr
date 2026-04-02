@@ -41,12 +41,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           lfs: true
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22.14.0
 
@@ -65,7 +65,7 @@ jobs:
         run: npm run -w packages/electron/example test:smoke:packaged
 
       - name: Upload packaged artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: gutenocr-electron-${{ matrix.target }}
           path: temp/electron-example-package/dist/
@@ -81,12 +81,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           lfs: true
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22.14.0
           registry-url: https://registry.npmjs.org
@@ -121,13 +121,13 @@ jobs:
           cd temp/published-package-check
           npm init -y >/dev/null
 
-          for attempt in 1 2 3 4 5; do
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
             if npm install "@repeato/ocr@${package_version}"; then
               break
             fi
 
-            if [ "$attempt" -eq 5 ]; then
-              echo "Published package @repeato/ocr@${package_version} was not installable after 5 attempts"
+            if [ "$attempt" -eq 10 ]; then
+              echo "Published package @repeato/ocr@${package_version} was not installable after 10 attempts"
               exit 1
             fi
 
