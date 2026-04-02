@@ -193,7 +193,7 @@ async function runCliMode(args: ReturnType<typeof parseArgs>) {
         throw new Error('Main thread OCR returned no text lines.')
       }
       console.log(formatDetection(result))
-      await app.quit()
+      app.exit(0)
       return true
     }
 
@@ -212,7 +212,7 @@ async function runCliMode(args: ReturnType<typeof parseArgs>) {
       console.log(JSON.stringify(rendererResult, null, 2))
     }
     win.destroy()
-    await app.quit()
+    app.exit(0)
     return true
   }
 
@@ -228,7 +228,7 @@ async function runCliMode(args: ReturnType<typeof parseArgs>) {
 
   console.log(JSON.stringify(benchmarkResults, null, 2))
   win.destroy()
-  await app.quit()
+  app.exit(0)
   return true
 }
 
