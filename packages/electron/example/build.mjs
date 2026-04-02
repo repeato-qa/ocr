@@ -9,15 +9,13 @@ const assetsDir = path.join(outdir, 'assets')
 const wasmDir = path.join(outdir, 'wasm')
 const workspaceRoot = path.join(rootDir, '../../..')
 const localAlias = {
-  '@gutenye/ocr-browser': path.join(workspaceRoot, 'packages/browser/src/index.ts'),
-  '@gutenye/ocr-node': path.join(workspaceRoot, 'packages/node/src/index.ts'),
-  '@gutenye/ocr-common': path.join(workspaceRoot, 'packages/common/src/index.ts'),
-  '@gutenye/ocr-models/node': path.join(rootDir, 'stubs/default-models.js'),
-  '@gutenye/ocr-common/splitIntoLineImages': path.join(
-    workspaceRoot,
-    'packages/common/src/backend/splitIntoLineImages.ts',
-  ),
-}
+  "@gutenye/ocr-browser": path.join(workspaceRoot, "packages/browser/src/index.ts"),
+  "@repeato/ocr": path.join(workspaceRoot, "packages/node/src/index.ts"),
+  "@repeato/ocr/electron": path.join(workspaceRoot, "packages/node/src/electron.ts"),
+  "@gutenye/ocr-common": path.join(workspaceRoot, "packages/common/src/index.ts"),
+  "@gutenye/ocr-models/node": path.join(rootDir, "stubs/default-models.js"),
+  "@gutenye/ocr-common/splitIntoLineImages": path.join(workspaceRoot, "packages/common/src/backend/splitIntoLineImages.ts"),
+};
 const rendererAlias = {
   ...localAlias,
   fs: path.join(rootDir, 'stubs/empty.js'),

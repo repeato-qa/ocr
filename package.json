@@ -1,6 +1,7 @@
 {
-  "name": "@gutenye/ocr",
-  "version": "1.4.8",
+  "name": "@repeato/ocr-workspace",
+  "version": "1.5.0",
+  "private": true,
   "workspaces": [
     "packages/browser",
     "packages/browser/example",
@@ -12,6 +13,10 @@
     "packages/react-native",
     "packages/react-native/example"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/repeato-qa/ocr.git"
+  },
   "devDependencies": {
     "@biomejs/biome": "1.7.3",
     "@types/bun": "latest",

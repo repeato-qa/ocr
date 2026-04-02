@@ -2,7 +2,12 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "#common/*": ["./packages/common/src/*"]
+      "#common/*": ["./packages/common/src/*"],
+      "@gutenye/ocr-common": ["./packages/common/src/index.ts"],
+      "@gutenye/ocr-common/splitIntoLineImages": ["./packages/common/src/backend/splitIntoLineImages.ts"],
+      "@gutenye/ocr-models/node": ["./packages/models/node.js"],
+      "@repeato/ocr": ["./packages/node/src/index.ts"],
+      "@repeato/ocr/electron": ["./packages/node/src/electron.ts"]
     },
     "lib": ["ESNext", "DOM"],
     "target": "ESNext",

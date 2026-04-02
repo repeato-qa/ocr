@@ -1,6 +1,6 @@
 {
-  "name": "@gutenye/ocr-node",
-  "description": "Guten OCR is a high accurate text detection (OCR) Javascript/Typescript library that runs on Node.js, Browser, React Native and C++. Based on PaddleOCR and ONNX runtime",
+  "name": "@repeato/ocr",
+  "description": "Repeato OCR for Node.js and Electron main processes, based on PaddleOCR and ONNX Runtime",
   "keywords": [
     "ocr",
     "paddleocr",
@@ -8,18 +8,30 @@
     "onnxruntime",
     "node"
   ],
-  "version": "1.4.8",
+  "version": "1.5.0",
   "type": "module",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/gutenye/ocr.git",
+    "url": "git+https://github.com/repeato-qa/ocr.git",
     "directory": "packages/node"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "exports": {
-    "bun": "./src/index.ts",
-    "react-native": "./src/index.ts",
-    "default": "./build/index.js"
+    ".": {
+      "bun": "./src/index.ts",
+      "react-native": "./src/index.ts",
+      "types": "./build/node/src/index.d.ts",
+      "default": "./build/node/src/index.js"
+    },
+    "./electron": {
+      "bun": "./src/electron.ts",
+      "react-native": "./src/electron.ts",
+      "types": "./build/node/src/electron.d.ts",
+      "default": "./build/node/src/electron.js"
+    }
   },
   "files": [
     "src",
@@ -27,7 +39,8 @@
     "!**/__tests__"
   ],
   "scripts": {
-    "prepublishOnly": "cp ../../README.md . && ./ake build",
+    "build": "rm -rf build && npx --no-install tsc --project tsconfig.build.json && npx --no-install tsc-alias --project tsconfig.build.json",
+    "prepublishOnly": "cp ../../README.md . && npm run build",
     "postpublish": "rm README.md && rm -rf build"
   },
   "dependencies": {

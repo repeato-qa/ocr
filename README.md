@@ -1,8 +1,8 @@
-# Guten OCR
+# Repeato OCR
 
 > [Demo](https://gutenye-ocr.netlify.app/) | [Roadmap](https://github.com/users/gutenye/projects/5/views/4)
 
-**an OCR Javascript library runs on Node.js, Browser, React Native and C++** 
+**an OCR Javascript library for Node.js and Electron main processes** 
 
 Based on [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR) and [ONNX Runtime](https://github.com/microsoft/onnxruntime), supports PP-OCRv4 model
 
@@ -13,35 +13,18 @@ Based on [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR) and [ONNX Runtim
 > [Example](./packages/node/example/README.md)
 
 ```ts
-bun add @gutenye/ocr-node
-import Ocr from '@gutenye/ocr-node'
+bun add @repeato/ocr
+import Ocr from '@repeato/ocr'
 const ocr = await Ocr.create()
 const result = await ocr.detect('a.jpg')
-```
-
-### Browser
-
-> [Example](./packages/browser/example/README.md)
-
-```ts
-bun add @gutenye/ocr-browser
-import Ocr from '@gutenye/ocr-browser'
-const ocr = await Ocr.create({
-  models: {
-    detectionPath: '/assets/ch_PP-OCRv4_det_infer.onnx',
-    recognitionPath: '/assets/ch_PP-OCRv4_rec_infer.onnx',
-    dictionaryPath: '/assets/ppocr_keys_v1.txt'
-  }
-})
-const result = await ocr.detect('/a.jpg')
 ```
 
 ### Electron
 
 > [Example](./packages/electron/example/README.md)
 
-Use `@gutenye/ocr-node` in the Electron main process and `@gutenye/ocr-browser` in the renderer.
-The renderer can now load bundled model bytes directly, which makes self-contained Electron bundles possible without an HTTP server.
+Use `@repeato/ocr/electron` in the Electron main process.
+The repository still contains renderer-side example code for the packaged Electron smoke app, but there is no separate browser package in the Repeato publish flow.
 
 ### React Native
 
@@ -107,6 +90,12 @@ git clone git@github.com:gutenye/ocr.git
 ```
 
 - [Development](docs/Development.md)
+
+## Publishing
+
+- GitHub Actions publishes only `@repeato/ocr` from `packages/node`
+- Release publication happens after the packaged Electron smoke matrix passes
+- A local `npm publish` is not required to create the package on npm if the `@repeato` scope and token permissions are already set up correctly
 
 ## Related Projects
 

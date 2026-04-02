@@ -6,7 +6,16 @@ on:
       - main
       - electron-support
   pull_request:
+  release:
+    types:
+      - published
   workflow_dispatch:
+    inputs:
+      publish_to_npm:
+        description: Publish @repeato/ocr after the Electron matrix succeeds
+        required: false
+        default: false
+        type: boolean
 
 env:
   OMP_THREAD_LIMIT: '1'
@@ -38,7 +47,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 22.14.0
 
       - name: Install workspace dependencies
         run: npm install
@@ -59,3 +68,67 @@ jobs:
         with:
           name: gutenocr-electron-${{ matrix.target }}
           path: temp/electron-example-package/dist/
+
+  publish-node-package:
+    name: Publish @repeato/ocr
+    needs: build-electron
+    if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && inputs.publish_to_npm)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.14.0
+          registry-url: https://registry.npmjs.org
+
+      - name: Install workspace dependencies
+        run: npm install
+
+      - name: Validate release tag matches package version
+        if: github.event_name == 'release'
+        run: |
+          package_version=$(node -p "require('./packages/node/package.json').version")
+          expected_tag="v${package_version}"
+          actual_tag="${{ github.event.release.tag_name }}"
+          if [ "$actual_tag" != "$expected_tag" ]; then
+            echo "Release tag $actual_tag does not match package version $expected_tag"
+            exit 1
+          fi
+
+      - name: Publish package to npm
+        run: |
+          cd packages/node
+          npm publish
+
+      - name: Verify published package from npm
+        run: |
+          package_version=$(node -p "require('./packages/node/package.json').version")
+          rm -rf temp/published-package-check
+          mkdir -p temp/published-package-check
+          cd temp/published-package-check
+          npm init -y >/dev/null
+
+          for attempt in 1 2 3 4 5; do
+            if npm install "@repeato/ocr@${package_version}"; then
+              break
+            fi
+
+            if [ "$attempt" -eq 5 ]; then
+              echo "Published package @repeato/ocr@${package_version} was not installable after 5 attempts"
+              exit 1
+            fi
+
+            echo "Waiting for @repeato/ocr@${package_version} to become available on npm"
+            sleep 15
+          done
+
+          node --input-type=module -e "const pkg = await import('@repeato/ocr'); const electron = await import('@repeato/ocr/electron'); if (typeof pkg.default?.create !== 'function') throw new Error('Missing default create() on @repeato/ocr'); if (typeof electron.default?.create !== 'function') throw new Error('Missing default create() on @repeato/ocr/electron'); console.log(JSON.stringify({ version: '${package_version}', defaultType: typeof pkg.default, electronDefaultType: typeof electron.default }, null, 2))"
