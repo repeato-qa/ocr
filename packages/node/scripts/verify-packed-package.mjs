@@ -8,7 +8,7 @@ const execFileAsync = promisify(execFile)
 const packageDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const workspaceRoot = path.resolve(packageDir, '../..')
 const verifyDir = path.join(workspaceRoot, 'temp', 'npm-release-check')
-const fixturePath = path.join(workspaceRoot, '..', 'app', 'test', 'resources', 'ocr', 'negative text in big image.jpeg')
+const fixturePath = path.join(workspaceRoot, 'packages', 'electron', 'example', 'test-assets', 'login-screen.jpeg')
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm'
 
 async function run(command, args, cwd) {

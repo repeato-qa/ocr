@@ -109,7 +109,9 @@ jobs:
           fi
 
       - name: Verify package tarball before publish
-        run: npm run -w packages/node pack:verify
+        run: |
+          cd packages/node
+          npm run pack:verify
 
       - name: Publish package to npm
         run: |
