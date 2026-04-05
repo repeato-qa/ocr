@@ -18,6 +18,7 @@ function resolveAssetDir() {
   const rootDir = resolveRootDir()
   const candidates = [
     path.resolve(rootDir, '../../models/assets'),
+    path.resolve(rootDir, './assets'),
     path.resolve(rootDir, '../assets'),
   ]
 

@@ -108,10 +108,13 @@ jobs:
             exit 1
           fi
 
+      - name: Verify package tarball before publish
+        run: npm run -w packages/node pack:verify
+
       - name: Publish package to npm
         run: |
           cd packages/node
-          npm publish
+          npm publish --provenance
 
       - name: Verify published package from npm
         run: |

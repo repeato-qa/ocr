@@ -1,6 +1,6 @@
 {
   "name": "@repeato/ocr-workspace",
-  "version": "1.5.4",
+  "version": "1.5.5",
   "private": true,
   "workspaces": [
     "packages/browser",
@@ -20,6 +20,8 @@
   "devDependencies": {
     "@biomejs/biome": "1.7.3",
     "@types/bun": "latest",
+    "detect-libc": "^2.1.2",
+    "esbuild": "^0.25.3",
     "tsc-alias": "^1.8.8",
     "typescript": "^5.0.0"
   }

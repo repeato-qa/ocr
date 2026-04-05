@@ -8,8 +8,10 @@
     "onnxruntime",
     "node"
   ],
-  "version": "1.5.4",
+  "version": "1.5.5",
   "type": "module",
+  "main": "./build/node/index.js",
+  "types": "./build/node/src/index.d.ts",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -21,31 +23,41 @@
   },
   "exports": {
     ".": {
-      "bun": "./src/index.ts",
-      "react-native": "./src/index.ts",
       "types": "./build/node/src/index.d.ts",
-      "default": "./build/node/src/index.js"
+      "import": "./build/node/index.js",
+      "default": "./build/node/index.js"
     },
     "./electron": {
-      "bun": "./src/electron.ts",
-      "react-native": "./src/electron.ts",
       "types": "./build/node/src/electron.d.ts",
-      "default": "./build/node/src/electron.js"
-    }
+      "import": "./build/node/electron.js",
+      "default": "./build/node/electron.js"
+    },
+    "./package.json": "./package.json"
   },
   "files": [
-    "src",
     "build",
+    "README.md",
     "!**/__tests__"
   ],
   "scripts": {
-    "build": "rm -rf build && npx --no-install tsc --project tsconfig.build.json && npx --no-install tsc-alias --project tsconfig.build.json && node ./scripts/copy-model-assets.mjs",
-    "prepublishOnly": "cp ../../README.md . && npm run build",
-    "postpublish": "rm README.md && rm -rf build"
+    "build": "rm -rf build && npx --no-install tsc --project tsconfig.build.json && npx --no-install tsc-alias --project tsconfig.build.json && node ./scripts/bundle-node-package.mjs && node ./scripts/copy-model-assets.mjs",
+    "pack:verify": "node ./scripts/verify-packed-package.mjs",
+    "prepack": "node -e \"require('node:fs').copyFileSync('../../README.md', 'README.md')\" && npm run build",
+    "postpack": "node -e \"const fs = require('node:fs'); if (fs.existsSync('README.md')) fs.rmSync('README.md');\""
   },
   "dependencies": {
     "@gutenye/ocr-common": "^1.2.0",
-    "onnxruntime-node": "1.22.0-rev",
-    "sharp": "^0.34.3"
+    "onnxruntime-node": "1.22.0-rev"
+  },
+  "peerDependencies": {
+    "sharp": "^0.34.5"
+  },
+  "peerDependenciesMeta": {
+    "sharp": {
+      "optional": false
+    }
+  },
+  "devDependencies": {
+    "sharp": "^0.34.5"
   }
 }
