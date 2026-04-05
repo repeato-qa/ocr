@@ -19,7 +19,8 @@
   "dependencies": {
     "electron": "^36.0.0",
     "esbuild": "^0.25.3",
-    "onnxruntime-web": "^1.17.3"
+    "onnxruntime-web": "^1.17.3",
+    "sharp": "^0.34.5"
   },
   "devDependencies": {
     "@electron/packager": "^18.3.6",

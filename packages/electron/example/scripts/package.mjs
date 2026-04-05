@@ -17,6 +17,7 @@ const arch = process.arch
 const productName = 'gutenOCR'
 const executableName = 'gutenOCR'
 const electronVersion = resolveElectronVersion(packageJson.dependencies.electron)
+const sharpVersion = resolveSharpVersion(packageJson, nodePackageJson)
 
 await fs.rm(stageDir, { recursive: true, force: true })
 await fs.mkdir(stageDir, { recursive: true })
@@ -34,7 +35,7 @@ await fs.writeFile(
       main: './build/main.cjs',
       dependencies: {
         'onnxruntime-node': nodePackageJson.dependencies['onnxruntime-node'],
-        sharp: nodePackageJson.dependencies.sharp,
+        sharp: sharpVersion,
       },
     },
     null,
@@ -124,6 +125,18 @@ function resolveElectronVersion(versionRange) {
     throw new Error(`Could not resolve an Electron version from ${String(versionRange)}`)
   }
   return match[0]
+}
+
+function resolveSharpVersion(examplePackageJson, currentNodePackageJson) {
+  const version = examplePackageJson.dependencies?.sharp
+    || currentNodePackageJson.peerDependencies?.sharp
+    || currentNodePackageJson.devDependencies?.sharp
+
+  if (!version) {
+    throw new Error('Could not resolve a sharp version for the packaged Electron example')
+  }
+
+  return version
 }
 
 function getSpawnEnv() {
