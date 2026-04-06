@@ -26,5 +26,6 @@ class Ocr extends BaseOcr {
 }
 
 export * from '@gutenye/ocr-common'
+export const create = Ocr.create.bind(Ocr)
 
 export default Ocr
