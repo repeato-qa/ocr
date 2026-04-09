@@ -17,9 +17,11 @@
       </section>
       <section class="controls">
         <button id="pick-image" type="button">Choose Image</button>
-        <button id="run-renderer" type="button" disabled>Run Renderer</button>
+        <button id="run-renderer-wasm" type="button" disabled>Run Renderer WASM</button>
+        <button id="run-renderer-webgl" type="button" disabled>Run Renderer WebGL (Experimental)</button>
+        <button id="run-renderer-webgpu" type="button" disabled>Run Renderer WebGPU</button>
         <button id="run-main" type="button" disabled>Run Main</button>
-        <button id="run-compare" type="button" disabled>Compare Both</button>
+        <button id="run-compare" type="button" disabled>Compare All</button>
       </section>
       <section class="status-grid">
         <div class="panel">
@@ -28,9 +30,19 @@
           <img id="preview-image" alt="Selected input" />
         </div>
         <div class="panel">
-          <h2>Renderer</h2>
-          <p id="renderer-status">Idle</p>
-          <pre id="renderer-output"></pre>
+          <h2>Renderer WASM</h2>
+          <p id="renderer-wasm-status">Idle</p>
+          <pre id="renderer-wasm-output"></pre>
+        </div>
+        <div class="panel">
+          <h2>Renderer WebGL (Experimental)</h2>
+          <p id="renderer-webgl-status">Known incompatible with the current OCR models.</p>
+          <pre id="renderer-webgl-output">Use this only for explicit compatibility checks.</pre>
+        </div>
+        <div class="panel">
+          <h2>Renderer WebGPU</h2>
+          <p id="renderer-webgpu-status">Idle</p>
+          <pre id="renderer-webgpu-output"></pre>
         </div>
         <div class="panel">
           <h2>Main Thread</h2>
@@ -40,7 +52,7 @@
       </section>
       <section class="panel compare-panel">
         <h2>Comparison</h2>
-        <pre id="compare-output">Run both modes to compare results.</pre>
+        <pre id="compare-output">Run the supported modes to compare results. WebGL remains available as an explicit experimental check.</pre>
       </section>
     </main>
     <script type="module" src="./renderer.js"></script>

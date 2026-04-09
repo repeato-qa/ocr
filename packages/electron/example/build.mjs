@@ -18,6 +18,7 @@ const localAlias = {
 };
 const rendererAlias = {
   ...localAlias,
+  'onnxruntime-web': 'onnxruntime-web/all',
   fs: path.join(rootDir, 'stubs/empty.js'),
   path: path.join(rootDir, 'stubs/empty.js'),
 }

@@ -4,11 +4,32 @@ import { pathToFileURL } from 'node:url'
 import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 import Ocr from '@repeato/ocr'
 
-type BenchmarkMode = 'main' | 'renderer' | 'compare'
+type BenchmarkMode = 'main' | 'renderer' | 'renderer-wasm' | 'renderer-webgl' | 'renderer-webgpu' | 'compare'
+type RendererBenchmarkMode = 'renderer-wasm' | 'renderer-webgl' | 'renderer-webgpu'
 
 type DetectionResult = {
   durationMs: number
   texts: Array<{ text: string; mean: number }>
+}
+
+type BenchmarkResult = {
+  mode: string
+  iterations: number
+  warmupIterations: number
+  coldStartDurationMs: number
+  steadyStateAverageDurationMs: number
+  averageDurationMs: number
+  steadyStateDurationsMs: number[]
+  durationsMs: number[]
+  texts: Array<{ text: string; mean: number }>
+}
+
+type BenchmarkErrorResult = {
+  mode: string
+  error: {
+    message: string
+    stack?: string
+  }
 }
 
 function getMimeType(filePath: string) {
@@ -132,7 +153,14 @@ async function ensureAssetsReady() {
   ])
 }
 
-async function runRendererBenchmark(win: BrowserWindow, imagePath: string, iterations: number) {
+function normalizeBenchmarkMode(mode: BenchmarkMode): BenchmarkMode {
+  if (mode === 'renderer') {
+    return 'renderer-wasm'
+  }
+  return mode
+}
+
+async function runRendererBenchmark(win: BrowserWindow, imagePath: string, iterations: number, mode: RendererBenchmarkMode) {
   const imageUrl = `file://${imagePath}`
   const response = await win.webContents.executeJavaScript(`
     (async () => {
@@ -140,7 +168,7 @@ async function runRendererBenchmark(win: BrowserWindow, imagePath: string, itera
         if (typeof window.runRendererBenchmark !== 'function') {
           throw new Error('window.runRendererBenchmark is not available')
         }
-        const result = await window.runRendererBenchmark(${JSON.stringify({ imagePath, imageUrl, iterations })})
+        const result = await window.runRendererBenchmark(${JSON.stringify({ imagePath, imageUrl, iterations, mode })})
         return { ok: true, result }
       } catch (error) {
         return {
@@ -162,18 +190,42 @@ async function runRendererBenchmark(win: BrowserWindow, imagePath: string, itera
   return response.result
 }
 
-async function runMainBenchmark(imagePath: string, iterations: number) {
-  const durationsMs: number[] = []
+async function safeRunRendererBenchmark(win: BrowserWindow, imagePath: string, iterations: number, mode: RendererBenchmarkMode) {
+  try {
+    return await runRendererBenchmark(win, imagePath, iterations, mode)
+  } catch (error) {
+    return {
+      mode,
+      error: {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      },
+    } satisfies BenchmarkErrorResult
+  }
+}
+
+async function runMainBenchmark(imagePath: string, iterations: number, warmupIterations = 1): Promise<BenchmarkResult> {
+  let coldStartDetection: DetectionResult | undefined
+  for (let index = 0; index < warmupIterations; index += 1) {
+    coldStartDetection = await detectInMain(imagePath)
+  }
+
+  const steadyStateDurationsMs: number[] = []
   let lastDetection: DetectionResult | undefined
   for (let index = 0; index < iterations; index += 1) {
     lastDetection = await detectInMain(imagePath)
-    durationsMs.push(lastDetection.durationMs)
+    steadyStateDurationsMs.push(lastDetection.durationMs)
   }
+
   return {
     mode: 'main',
     iterations,
-    averageDurationMs: durationsMs.reduce((sum, value) => sum + value, 0) / durationsMs.length,
-    durationsMs,
+    warmupIterations,
+    coldStartDurationMs: coldStartDetection?.durationMs || 0,
+    steadyStateAverageDurationMs: steadyStateDurationsMs.reduce((sum, value) => sum + value, 0) / steadyStateDurationsMs.length,
+    averageDurationMs: steadyStateDurationsMs.reduce((sum, value) => sum + value, 0) / steadyStateDurationsMs.length,
+    steadyStateDurationsMs,
+    durationsMs: steadyStateDurationsMs,
     texts: lastDetection?.texts || [],
   }
 }
@@ -184,10 +236,12 @@ async function runCliMode(args: ReturnType<typeof parseArgs>) {
     return false
   }
 
+  const mode = normalizeBenchmarkMode(args.mode)
+
   await ensureAssetsReady()
 
   if (args.smokeImage) {
-    if (args.mode === 'main') {
+    if (mode === 'main') {
       const result = await detectInMain(imagePath)
       if (!result.texts.length) {
         throw new Error('Main thread OCR returned no text lines.')
@@ -198,18 +252,38 @@ async function runCliMode(args: ReturnType<typeof parseArgs>) {
     }
 
     const win = await createWindow({ show: false })
-    const rendererResult = await runRendererBenchmark(win, imagePath, 1)
-    if (!rendererResult.texts.length) {
-      throw new Error('Renderer OCR returned no text lines.')
+    const rendererModes: RendererBenchmarkMode[] = mode === 'compare'
+      ? ['renderer-wasm', 'renderer-webgpu']
+      : mode === 'renderer-webgpu'
+        ? ['renderer-webgpu']
+      : mode === 'renderer-webgl'
+        ? ['renderer-webgl']
+        : ['renderer-wasm']
+    const rendererResults = await Promise.all(rendererModes.map(rendererMode => safeRunRendererBenchmark(win, imagePath, 1, rendererMode)))
+    const successfulRendererResults = rendererResults.filter(result => !('error' in result))
+
+    if (!successfulRendererResults.length) {
+      throw new Error('Renderer OCR returned no successful results.')
     }
-    if (args.mode !== 'renderer') {
-      const mainResult = await detectInMain(imagePath)
+
+    if (mode === 'compare') {
+      const mainResult = await runMainBenchmark(imagePath, 1)
       if (!mainResult.texts.length) {
         throw new Error('Main thread OCR returned no text lines.')
       }
-      console.log(JSON.stringify({ renderer: rendererResult, main: mainResult }, null, 2))
+      console.log(
+        JSON.stringify(
+          {
+            rendererWasm: rendererResults.find(result => result.mode === 'renderer-wasm'),
+            rendererWebgpu: rendererResults.find(result => result.mode === 'renderer-webgpu'),
+            main: mainResult,
+          },
+          null,
+          2,
+        ),
+      )
     } else {
-      console.log(JSON.stringify(rendererResult, null, 2))
+      console.log(JSON.stringify(rendererResults[0], null, 2))
     }
     win.destroy()
     app.exit(0)
@@ -219,10 +293,16 @@ async function runCliMode(args: ReturnType<typeof parseArgs>) {
   const win = await createWindow({ show: false })
 
   const benchmarkResults: Record<string, unknown> = {}
-  if (args.mode === 'renderer' || args.mode === 'compare') {
-    benchmarkResults.renderer = await runRendererBenchmark(win, imagePath, args.iterations)
+  if (mode === 'renderer-wasm' || mode === 'compare') {
+    benchmarkResults.rendererWasm = await safeRunRendererBenchmark(win, imagePath, args.iterations, 'renderer-wasm')
   }
-  if (args.mode === 'main' || args.mode === 'compare') {
+  if (mode === 'renderer-webgl') {
+    benchmarkResults.rendererWebgl = await safeRunRendererBenchmark(win, imagePath, args.iterations, 'renderer-webgl')
+  }
+  if (mode === 'renderer-webgpu' || mode === 'compare') {
+    benchmarkResults.rendererWebgpu = await safeRunRendererBenchmark(win, imagePath, args.iterations, 'renderer-webgpu')
+  }
+  if (mode === 'main' || mode === 'compare') {
     benchmarkResults.main = await runMainBenchmark(imagePath, args.iterations)
   }
 

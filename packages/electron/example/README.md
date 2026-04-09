@@ -20,6 +20,23 @@ npm run start
 npm run benchmark
 ```
 
+The default comparison includes the supported paths for the current OCR models:
+
+- renderer WASM
+- renderer WebGPU
+- main thread
+
+WebGL stays available only as an explicit experimental compatibility check because the current OCR models fail on that backend.
+
+Explicit modes:
+
+```sh
+npm run benchmark:main
+npm run benchmark:renderer:wasm
+npm run benchmark:renderer:webgpu
+npm run benchmark:renderer:webgl
+```
+
 ## Smoke Test
 
 ```sh
