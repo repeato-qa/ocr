@@ -38,18 +38,27 @@ try {
   await run(npmCommand, ['init', '-y'], verifyDir)
   await run(npmCommand, ['install', tarballPath, 'sharp@0.34.5', '--legacy-peer-deps'], verifyDir)
 
+  // Verify both module systems. The Electron example mostly exercises ESM imports,
+  // but applications such as Repeato-Studio load the published package via
+  // webpack externals, which resolves through CommonJS `require()` at runtime.
   const verifyProgram = [
     `const fixturePath = ${JSON.stringify(fixturePath)}`,
     "const pkg = await import('@repeato/ocr')",
     "const electron = await import('@repeato/ocr/electron')",
+    "const { createRequire } = await import('node:module')",
+    "const require = createRequire(import.meta.url)",
+    "const pkgCjs = require('@repeato/ocr')",
+    "const electronCjs = require('@repeato/ocr/electron')",
     "const { default: sharp } = await import('sharp')",
     "if (typeof pkg.default?.create !== 'function') throw new Error('Missing default create() on @repeato/ocr')",
     "if (typeof electron.default?.create !== 'function') throw new Error('Missing default create() on @repeato/ocr/electron')",
+    "if (typeof pkgCjs.create !== 'function') throw new Error('Missing create() on CommonJS @repeato/ocr')",
+    "if (typeof electronCjs.create !== 'function') throw new Error('Missing create() on CommonJS @repeato/ocr/electron')",
     "const rawImage = await sharp(fixturePath).ensureAlpha().raw().toBuffer({ resolveWithObject: true })",
     "const ocr = await pkg.default.create()",
     'const result = await ocr.detect({ data: rawImage.data, width: rawImage.info.width, height: rawImage.info.height })',
     "if (!Array.isArray(result.texts) || result.texts.length === 0) throw new Error('OCR detect returned no texts')",
-    "console.log(JSON.stringify({ defaultCreate: typeof pkg.default.create, electronCreate: typeof electron.default.create, detectedTexts: result.texts.length }, null, 2))",
+    "console.log(JSON.stringify({ defaultCreate: typeof pkg.default.create, electronCreate: typeof electron.default.create, cjsCreate: typeof pkgCjs.create, cjsElectronCreate: typeof electronCjs.create, detectedTexts: result.texts.length }, null, 2))",
   ].join('; ')
 
   const verifyOutput = await run(

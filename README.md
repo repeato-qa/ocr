@@ -26,6 +26,13 @@ const result = await ocr.detect('a.jpg')
 Use `@repeato/ocr/electron` in the Electron main process.
 The repository still contains renderer-side example code for the packaged Electron smoke app, but there is no separate browser package in the Repeato publish flow.
 
+Package export notes:
+
+- `import Ocr from '@repeato/ocr'` and `import Ocr from '@repeato/ocr/electron'` are the preferred ESM entrypoints.
+- The published package also exposes explicit CommonJS `require()` entrypoints for both `@repeato/ocr` and `@repeato/ocr/electron`.
+- Those `require()` exports exist so Electron apps that externalize OCR instead of bundling it, such as Repeato-Studio, receive a stable CommonJS shape with `create()` directly on the loaded module.
+- The example Electron app in this repository bundles local source files with esbuild aliases, so its import path is simpler than an application that loads the published package through webpack externals.
+
 ### React Native
 
 > [Example](./packages/react-native/example/README.md)
