@@ -127,8 +127,10 @@ jobs:
           npm init -y >/dev/null
 
           for attempt in 1 2 3 4 5 6 7 8 9 10; do
-            if npm install "@repeato/ocr@${package_version}"; then
-              break
+            if npm view "@repeato/ocr@${package_version}" version --registry=https://registry.npmjs.org >/dev/null 2>&1; then
+              if npm install "@repeato/ocr@${package_version}" --prefer-online --registry=https://registry.npmjs.org; then
+                break
+              fi
             fi
 
             if [ "$attempt" -eq 10 ]; then
@@ -137,6 +139,7 @@ jobs:
             fi
 
             echo "Waiting for @repeato/ocr@${package_version} to become available on npm"
+            npm cache clean --force >/dev/null 2>&1 || true
             sleep 15
           done
 
