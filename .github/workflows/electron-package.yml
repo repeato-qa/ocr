@@ -5,6 +5,8 @@ on:
     branches:
       - main
       - electron-support
+    tags:
+      - 'v*'
   pull_request:
   release:
     types:
@@ -73,7 +75,7 @@ jobs:
   publish-node-package:
     name: Publish @repeato/ocr
     needs: build-electron
-    if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && inputs.publish_to_npm)
+    if: github.event_name == 'release' || startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.publish_to_npm)
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -98,11 +100,15 @@ jobs:
         run: npm install
 
       - name: Validate release tag matches package version
-        if: github.event_name == 'release'
+        if: github.event_name == 'release' || startsWith(github.ref, 'refs/tags/v')
         run: |
           package_version=$(node -p "require('./packages/node/package.json').version")
           expected_tag="v${package_version}"
-          actual_tag="${{ github.event.release.tag_name }}"
+          if [ "${{ github.event_name }}" = "release" ]; then
+            actual_tag="${{ github.event.release.tag_name }}"
+          else
+            actual_tag="${GITHUB_REF#refs/tags/}"
+          fi
           if [ "$actual_tag" != "$expected_tag" ]; then
             echo "Release tag $actual_tag does not match package version $expected_tag"
             exit 1
