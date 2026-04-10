@@ -52,9 +52,11 @@ if (result.status !== 0) {
 }
 
 const output = `${result.stdout || ''}${result.stderr || ''}`
-assert.match(output, /Investing\./)
-assert.match(output, /Simplified/)
-assert.match(output, /Email or Customer Code/)
+assert.match(output, /Repeato Demo App/)
+assert.match(output, /Secure sign in/)
+assert.match(output, /Email \*/)
+assert.match(output, /Password \*/)
+assert.match(output, /LOGIN/)
 
 console.log(output.trim())
 console.log('Packaged Electron smoke test passed')
