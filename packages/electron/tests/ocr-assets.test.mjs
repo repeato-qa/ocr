@@ -4,13 +4,14 @@ import assert from 'node:assert/strict'
 import { execFile } from 'node:child_process'
 import path from 'node:path'
 import { promisify } from 'node:util'
-import sharp from 'sharp'
 
 const execFileAsync = promisify(execFile)
 const packageDir = process.cwd()
 const workspaceRoot = path.join(packageDir, '..', '..')
 const DebugOutputDir = path.join(workspaceRoot, 'temp', 'electron-ocr-debug')
 const DetectionCache = new Map()
+let sharpModulePromise
+let hasLoggedSharpSkip = false
 const electronBinary = path.join(
   packageDir,
   '..',
@@ -76,6 +77,16 @@ function getSpawnEnv() {
     env[key] = process.env[key]
   }
   return env
+}
+
+async function getSharpModule() {
+  if (!sharpModulePromise) {
+    sharpModulePromise = import('sharp')
+      .then((module) => module.default)
+      .catch(() => null)
+  }
+
+  return await sharpModulePromise
 }
 
 function escapeSvgText(text) {
@@ -154,6 +165,15 @@ async function renderDebugImages(imagePath, detection) {
  * Writes a single overlay image for the provided OCR lines.
  */
 async function renderDebugImage(imagePath, lines, suffix, strokeColor, fillColor) {
+  const sharp = await getSharpModule()
+  if (!sharp) {
+    if (!hasLoggedSharpSkip) {
+      console.warn('Skipping OCR debug image rendering because sharp is not available in this environment')
+      hasLoggedSharpSkip = true
+    }
+    return
+  }
+
   const absoluteImagePath = path.join(packageDir, imagePath)
   const debugImagePath = getDebugImagePath(imagePath, suffix)
   const image = sharp(absoluteImagePath)
