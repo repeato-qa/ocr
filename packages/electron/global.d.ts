@@ -14,6 +14,7 @@ declare global {
 type DetectionLine = {
   text: string
   mean: number
+  box?: [[number, number], [number, number], [number, number], [number, number]]
 }
 
 type BenchmarkDetection = {

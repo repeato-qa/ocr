@@ -1,11 +1,16 @@
-import { test } from 'node:test'
+import fs from 'node:fs/promises'
+import { before, test } from 'node:test'
 import assert from 'node:assert/strict'
 import { execFile } from 'node:child_process'
 import path from 'node:path'
 import { promisify } from 'node:util'
+import sharp from 'sharp'
 
 const execFileAsync = promisify(execFile)
 const packageDir = process.cwd()
+const workspaceRoot = path.join(packageDir, '..', '..')
+const DebugOutputDir = path.join(workspaceRoot, 'temp', 'electron-ocr-debug')
+const DetectionCache = new Map()
 const electronBinary = path.join(
   packageDir,
   '..',
@@ -16,7 +21,23 @@ const electronBinary = path.join(
 )
 const electronArgsPrefix = process.platform === 'linux' ? ['--no-sandbox'] : []
 
+before(async () => {
+  await fs.rm(DebugOutputDir, { recursive: true, force: true })
+  await fs.mkdir(DebugOutputDir, { recursive: true })
+  console.log(`Writing OCR debug images to ${DebugOutputDir}`)
+})
+
 async function runMainBenchmarkDetection(imagePath) {
+  if (DetectionCache.has(imagePath)) {
+    return await DetectionCache.get(imagePath)
+  }
+
+  const detectionPromise = runAndRenderMainBenchmarkDetection(imagePath)
+  DetectionCache.set(imagePath, detectionPromise)
+  return await detectionPromise
+}
+
+async function runAndRenderMainBenchmarkDetection(imagePath) {
   const { stdout, stderr } = await execFileAsync(
     electronBinary,
     [...electronArgsPrefix, '.', '--benchmark', imagePath, '--iterations', '1', '--mode', 'main'],
@@ -33,6 +54,7 @@ async function runMainBenchmarkDetection(imagePath) {
   assert.ok(parsed.main, 'Expected main benchmark results')
   assert.ok(Array.isArray(parsed.main.texts), 'Expected OCR text lines')
   assert.ok(Array.isArray(parsed.main.rawTexts), 'Expected raw OCR text lines')
+  await renderDebugImages(imagePath, parsed.main)
   return parsed.main
 }
 
@@ -54,6 +76,104 @@ function getSpawnEnv() {
     env[key] = process.env[key]
   }
   return env
+}
+
+function escapeSvgText(text) {
+  return text
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&apos;')
+}
+
+function getDebugImagePath(imagePath, suffix) {
+  const parsedPath = path.parse(imagePath)
+  return path.join(DebugOutputDir, `${parsedPath.name}.${suffix}.debug.png`)
+}
+
+function getBoxBounds(box) {
+  const xValues = box.map(([x]) => x)
+  const yValues = box.map(([, y]) => y)
+  return {
+    left: Math.min(...xValues),
+    right: Math.max(...xValues),
+    top: Math.min(...yValues),
+    bottom: Math.max(...yValues),
+  }
+}
+
+function toOverlayMarkup(lines, strokeColor, fillColor) {
+  return lines
+    .filter((line) => Array.isArray(line.box) && line.box.length === 4)
+    .map((line) => {
+      const bounds = getBoxBounds(line.box)
+      const fontSize = Math.max(10, Math.min(16, Math.round((bounds.bottom - bounds.top) * 0.55) || 10))
+      const labelWidth = Math.max(bounds.right - bounds.left, Math.ceil(line.text.length * (fontSize * 0.58)))
+      const labelTop = Math.max(0, bounds.top - fontSize - 4)
+      const polygonPoints = line.box.map(([x, y]) => `${x},${y}`).join(' ')
+
+      return `
+      <polygon
+        points="${polygonPoints}"
+        fill="${fillColor}"
+        stroke="${strokeColor}"
+        stroke-width="2"
+      />
+      <rect
+        x="${bounds.left}"
+        y="${labelTop}"
+        width="${labelWidth}"
+        height="${fontSize + 4}"
+        fill="rgba(15, 23, 42, 0.82)"
+      />
+      <text
+        x="${bounds.left + 4}"
+        y="${labelTop + fontSize}"
+        fill="#ffffff"
+        font-size="${fontSize}"
+        font-family="Helvetica, Arial, sans-serif"
+      >${escapeSvgText(line.text)}</text>
+    `
+    })
+    .join('')
+}
+
+/**
+ * Renders OCR bounding-box overlays for both merged `texts` and segment-level
+ * `rawTexts` so each asset test run leaves inspectable artifacts behind.
+ */
+async function renderDebugImages(imagePath, detection) {
+  await Promise.all([
+    renderDebugImage(imagePath, detection.texts, 'texts', '#ff4d00', 'rgba(255, 196, 0, 0.18)'),
+    renderDebugImage(imagePath, detection.rawTexts, 'raw-texts', '#0f766e', 'rgba(45, 212, 191, 0.16)'),
+  ])
+}
+
+/**
+ * Writes a single overlay image for the provided OCR lines.
+ */
+async function renderDebugImage(imagePath, lines, suffix, strokeColor, fillColor) {
+  const absoluteImagePath = path.join(packageDir, imagePath)
+  const debugImagePath = getDebugImagePath(imagePath, suffix)
+  const image = sharp(absoluteImagePath)
+  const metadata = await image.metadata()
+  const width = metadata.width ?? 0
+  const height = metadata.height ?? 0
+
+  assert.ok(width > 0, `Could not determine width for ${imagePath}`)
+  assert.ok(height > 0, `Could not determine height for ${imagePath}`)
+
+  const overlay = Buffer.from(`
+    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+      ${toOverlayMarkup(lines, strokeColor, fillColor)}
+    </svg>
+  `)
+
+  await image
+    .composite([{ input: overlay }])
+    .png()
+    .toFile(debugImagePath)
 }
 
 function extractFirstJsonObject(output) {

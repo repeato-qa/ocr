@@ -7,10 +7,18 @@ import Ocr from '@repeato/ocr'
 type BenchmarkMode = 'main' | 'renderer' | 'renderer-wasm' | 'renderer-webgl' | 'renderer-webgpu' | 'compare'
 type RendererBenchmarkMode = 'renderer-wasm' | 'renderer-webgl' | 'renderer-webgpu'
 
+type DetectionBox = [[number, number], [number, number], [number, number], [number, number]]
+
+type DetectionLine = {
+  text: string
+  mean: number
+  box?: DetectionBox
+}
+
 type DetectionResult = {
   durationMs: number
-  texts: Array<{ text: string; mean: number }>
-  rawTexts: Array<{ text: string; mean: number }>
+  texts: DetectionLine[]
+  rawTexts: DetectionLine[]
 }
 
 type BenchmarkResult = {
@@ -22,8 +30,8 @@ type BenchmarkResult = {
   averageDurationMs: number
   steadyStateDurationsMs: number[]
   durationsMs: number[]
-  texts: Array<{ text: string; mean: number }>
-  rawTexts: Array<{ text: string; mean: number }>
+  texts: DetectionLine[]
+  rawTexts: DetectionLine[]
 }
 
 type BenchmarkErrorResult = {
@@ -87,14 +95,26 @@ async function getMainThreadOcr() {
   return mainThreadOcr
 }
 
+function cloneDetectionBox(box: DetectionBox): DetectionBox {
+  return box.map(([x, y]) => [x, y]) as DetectionBox
+}
+
+function toDetectionLine({ text, mean, box }: { text: string; mean: number; box?: DetectionBox }) {
+  return {
+    text,
+    mean,
+    box: box ? cloneDetectionBox(box) : undefined,
+  }
+}
+
 async function detectInMain(imagePath: string): Promise<DetectionResult> {
   const ocr = await getMainThreadOcr()
   const start = performance.now()
   const result = await ocr.detect(imagePath)
   return {
     durationMs: performance.now() - start,
-    texts: result.texts.map(({ text, mean }) => ({ text, mean })),
-    rawTexts: (result.rawTexts || []).map(({ text, mean }) => ({ text, mean })),
+    texts: result.texts.map(toDetectionLine),
+    rawTexts: (result.rawTexts || []).map(toDetectionLine),
   }
 }
 
