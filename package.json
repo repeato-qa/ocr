@@ -1,12 +1,12 @@
 {
   "name": "@repeato/ocr-workspace",
-  "version": "1.5.7",
+  "version": "1.5.8",
   "private": true,
   "workspaces": [
     "packages/browser",
     "packages/browser/example",
     "packages/common",
-    "packages/electron/example",
+    "packages/electron",
     "packages/models",
     "packages/node",
     "packages/node/example",

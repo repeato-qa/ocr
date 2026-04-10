@@ -5,8 +5,8 @@ import { spawnSync } from 'node:child_process'
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url))
 const packageDir = path.resolve(rootDir, '..')
-const workspaceRoot = path.resolve(packageDir, '../../..')
-const tempRoot = path.join(workspaceRoot, 'temp', 'electron-example-package')
+const workspaceRoot = path.resolve(packageDir, '../..')
+const tempRoot = path.join(workspaceRoot, 'temp', 'electron-package')
 const stageDir = path.join(tempRoot, 'stage')
 const distDir = path.join(tempRoot, 'dist')
 const packageJson = JSON.parse(await fs.readFile(path.join(packageDir, 'package.json'), 'utf8'))
@@ -28,7 +28,7 @@ await fs.writeFile(
   path.join(stageDir, 'package.json'),
   JSON.stringify(
     {
-      name: 'gutenocr-electron-example-app',
+      name: 'gutenocr-electron-app',
       productName,
       private: true,
       version: packageJson.version ?? '0.0.0',
@@ -127,13 +127,13 @@ function resolveElectronVersion(versionRange) {
   return match[0]
 }
 
-function resolveSharpVersion(examplePackageJson, currentNodePackageJson) {
-  const version = examplePackageJson.dependencies?.sharp
+function resolveSharpVersion(electronPackageJson, currentNodePackageJson) {
+  const version = electronPackageJson.dependencies?.sharp
     || currentNodePackageJson.peerDependencies?.sharp
     || currentNodePackageJson.devDependencies?.sharp
 
   if (!version) {
-    throw new Error('Could not resolve a sharp version for the packaged Electron example')
+    throw new Error('Could not resolve a sharp version for the packaged Electron app')
   }
 
   return version

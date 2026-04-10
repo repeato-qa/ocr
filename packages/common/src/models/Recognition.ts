@@ -1,7 +1,7 @@
 import type { InferenceSession as InferenceSessionCommon, Tensor } from 'onnxruntime-common'
 import invariant from 'tiny-invariant'
 import { FileUtils, InferenceSession, defaultModels } from '#common/backend'
-import type { BinarySource, Dictionary, Line, LineImage, ModelBaseConstructorArg, ModelCreateOptions } from '#common/types'
+import type { BinarySource, Box, Dictionary, Line, LineImage, ModelBaseConstructorArg, ModelCreateOptions } from '#common/types'
 import { ModelBase } from './ModelBase'
 
 export class Recognition extends ModelBase {
@@ -55,7 +55,7 @@ export class Recognition extends ModelBase {
       allLines.unshift(...lines)
     }
     // console.timeEnd('Recognition')
-    const result = calculateBox({ lines: allLines, lineImages })
+    const result = buildRecognitionLines({ lines: allLines, lineImages })
     return result
   }
 
@@ -115,64 +115,56 @@ function decode(dictionary: string[], textIndex: number[], textProb: number[], i
   return { text, mean }
 }
 
-function calculateBox({
+/**
+ * Preserves the raw recognition boxes and also derives merged text lines for
+ * callers that still expect sentence-like output.
+ */
+function buildRecognitionLines({
   lines,
   lineImages,
 }: {
   lines: Line[]
   lineImages: LineImage[]
 }) {
-  let mainLine = lines
-  const box = lineImages
-  for (const i in mainLine) {
-    const b = box[mainLine.length - Number(i) - 1].box
-    for (const p of b) {
-      p[0] = p[0]
-      p[1] = p[1]
-    }
-    mainLine[i]['box'] = b
+  const rawTexts = lines
+    .map((line, index) => {
+      const lineImage = lineImages[lines.length - index - 1]
+      return {
+        ...line,
+        box: cloneBox(lineImage.box as Box),
+      }
+    })
+    .filter((line) => line.mean >= 0.5)
+
+  return {
+    rawTexts,
+    texts: mergeNearbyLines(rawTexts),
   }
-  mainLine = mainLine.filter((x) => x.mean >= 0.5)
-  mainLine = afAfRec(mainLine)
-  return mainLine
 }
 
-function afAfRec(lines: Line[]) {
+/**
+ * Merges raw recognition segments back into row-level text lines to preserve
+ * the previous `texts` behavior for existing callers.
+ */
+function mergeNearbyLines(lines: Line[]) {
   const outputLines: Line[] = []
-  const indexes: Map<BoxType, number> = new Map()
-  for (const index in lines) {
-    const box: any = lines[index].box
-    indexes.set(box, Number(index))
-  }
+  const groupedLines = groupLinesByMidline(lines)
 
-  const groupedBoxes = groupBoxesByMidlineDifference([...indexes.keys()])
-
-  for (const boxes of groupedBoxes) {
-    const texts = []
-    let mean = 0
-    for (const box of boxes) {
-      const index = indexes.get(box)
-      if (index === undefined) {
-        continue
-      }
-      const line = lines[index]
-      texts.push(line.text)
-      mean += line.mean
-    }
-    let outputBox = undefined
-    if (boxes.at(0) && boxes.at(-1)) {
-      outputBox = [boxes.at(0)![0], boxes.at(-1)![1], boxes.at(-1)![2], boxes.at(0)![3]]
-    }
+  for (const lineGroup of groupedLines) {
     outputLines.push({
-      mean: mean / boxes.length,
-      text: texts.join(' '),
-      box: outputBox,
+      mean: lineGroup.reduce((sum, line) => sum + line.mean, 0) / lineGroup.length,
+      text: lineGroup.map((line) => line.text).join(' '),
+      box: mergeBoxes(lineGroup.map((line) => line.box).filter((box): box is Box => Boolean(box))),
     })
   }
   return outputLines
 }
 
-function calculateAverageHeight(boxes: BoxType[]): number {
+function calculateAverageHeight(boxes: Box[]): number {
+  if (boxes.length === 0) {
+    return 0
+  }
+
   let totalHeight = 0
   for (const box of boxes) {
     const [[, y1], , [, y2]] = box
@@ -182,39 +174,58 @@ function calculateAverageHeight(boxes: BoxType[]): number {
   return totalHeight / boxes.length
 }
 
-function groupBoxesByMidlineDifference(boxes: BoxType[]): BoxType[][] {
-  const averageHeight = calculateAverageHeight(boxes)
-  const result: BoxType[][] = []
-  for (const box of boxes) {
-    const [[, y1], , [, y2]] = box
+/**
+ * Groups raw recognition segments into visual rows by comparing their midlines.
+ */
+function groupLinesByMidline(lines: Line[]): Line[][] {
+  const linesWithBoxes = lines.filter((line): line is Line & { box: Box } => Boolean(line.box))
+  const averageHeight = calculateAverageHeight(linesWithBoxes.map((line) => line.box))
+  const result: Line[][] = []
+
+  for (const line of linesWithBoxes) {
+    const [[, y1], , [, y2]] = line.box
     const midline = (y1 + y2) / 2
-    const group = result.find((b) => {
-      const [[, groupY1], , [, groupY2]] = b[0]
+    const group = result.find((groupLines) => {
+      const firstBox = groupLines[0].box!
+      const [[, groupY1], , [, groupY2]] = firstBox
       const groupMidline = (groupY1 + groupY2) / 2
       return Math.abs(groupMidline - midline) < averageHeight / 2
     })
+
     if (group) {
-      group.push(box)
+      group.push(line)
     } else {
-      result.push([box])
+      result.push([line])
     }
   }
 
   for (const group of result) {
-    group.sort((a, b) => {
-      const [ltA] = a
-      const [ltB] = b
-      return ltA[0] - ltB[0]
-    })
+    group.sort((left, right) => left.box![0][0] - right.box![0][0])
   }
 
-  result.sort((a, b) => a[0][0][1] - b[0][0][1])
+  result.sort((top, bottom) => top[0].box![0][1] - bottom[0].box![0][1])
 
   return result
 }
 
-type pointType = [number, number]
-type BoxType = [pointType, pointType, pointType, pointType]
+function mergeBoxes(boxes: Box[]): Box | undefined {
+  if (boxes.length === 0) {
+    return undefined
+  }
+
+  const xValues = boxes.flatMap((box) => box.map(([x]) => x))
+  const yValues = boxes.flatMap((box) => box.map(([, y]) => y))
+  const left = Math.min(...xValues)
+  const right = Math.max(...xValues)
+  const top = Math.min(...yValues)
+  const bottom = Math.max(...yValues)
+
+  return [[left, top], [right, top], [right, bottom], [left, bottom]]
+}
+
+function cloneBox(box: Box): Box {
+  return box.map(([x, y]) => [x, y]) as Box
+}
 
 function normalizeBinarySource(source: BinarySource) {
   if (source instanceof URL) {

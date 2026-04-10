@@ -1,6 +1,5 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 
 export default {
   get detectionPath() {
@@ -36,5 +35,25 @@ function resolveRootDir() {
     return __dirname
   }
 
-  return path.dirname(fileURLToPath(import.meta.url))
+  return path.dirname(resolveCurrentFilePath())
+}
+
+function resolveCurrentFilePath() {
+  const previousPrepareStackTrace = Error.prepareStackTrace
+
+  try {
+    Error.prepareStackTrace = (_error, stack) => stack as unknown as string
+    const stack = new Error().stack as unknown as Array<{ getFileName?: () => string | null }> | undefined
+
+    for (const callSite of stack || []) {
+      const filePath = callSite.getFileName?.()
+      if (filePath) {
+        return filePath
+      }
+    }
+  } finally {
+    Error.prepareStackTrace = previousPrepareStackTrace
+  }
+
+  throw new Error('Could not determine the OCR default models module path')
 }

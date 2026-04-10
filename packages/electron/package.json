@@ -1,5 +1,5 @@
 {
-  "name": "electron-example",
+  "name": "electron-app",
   "private": true,
   "type": "module",
   "main": "./build/main.cjs",

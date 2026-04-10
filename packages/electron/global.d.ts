@@ -19,6 +19,7 @@ type DetectionLine = {
 type BenchmarkDetection = {
   durationMs: number
   texts: DetectionLine[]
+  rawTexts: DetectionLine[]
 }
 
 type BenchmarkMode = 'main' | 'renderer' | 'renderer-wasm' | 'renderer-webgl' | 'renderer-webgpu' | 'compare'

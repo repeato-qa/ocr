@@ -6,8 +6,8 @@ import { spawnSync } from 'node:child_process'
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url))
 const packageDir = path.resolve(rootDir, '..')
-const workspaceRoot = path.resolve(packageDir, '../../..')
-const tempRoot = path.join(workspaceRoot, 'temp', 'electron-example-package')
+const workspaceRoot = path.resolve(packageDir, '../..')
+const tempRoot = path.join(workspaceRoot, 'temp', 'electron-package')
 const metadata = JSON.parse(fs.readFileSync(path.join(tempRoot, 'metadata.json'), 'utf8'))
 
 const executablePath = resolveExecutablePath(metadata)

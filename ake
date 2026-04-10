@@ -23,9 +23,9 @@ def 'main browser example' [] {
   ./ake start
 }
 
-# Run Electron example
-def 'main electron example' [] {
-  cd packages/electron/example
+# Run Electron app
+def 'main electron' [] {
+  cd packages/electron
   ./ake start
 }
 

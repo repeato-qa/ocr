@@ -41,6 +41,10 @@ export type LineImage = {
   box: number[][]
 }
 
+export type Point = [x: number, y: number]
+
+export type Box = [Point, Point, Point, Point]
+
 export type Region = {
   left: number
   top: number
@@ -51,12 +55,17 @@ export type Region = {
 export type Line = {
   text: string
   mean: number
-  box?: number[][]
+  box?: Box
+}
+
+export type OcrResult = {
+  texts: Line[]
+  rawTexts: Line[]
+  resizedImageWidth: number
+  resizedImageHeight: number
 }
 
 export type Dictionary = string[]
-
-export type Point = [x: number, y: number]
 
 export type BinarySource = string | URL | ArrayBuffer | Uint8Array
 

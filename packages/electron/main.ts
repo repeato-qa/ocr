@@ -10,6 +10,7 @@ type RendererBenchmarkMode = 'renderer-wasm' | 'renderer-webgl' | 'renderer-webg
 type DetectionResult = {
   durationMs: number
   texts: Array<{ text: string; mean: number }>
+  rawTexts: Array<{ text: string; mean: number }>
 }
 
 type BenchmarkResult = {
@@ -22,6 +23,7 @@ type BenchmarkResult = {
   steadyStateDurationsMs: number[]
   durationsMs: number[]
   texts: Array<{ text: string; mean: number }>
+  rawTexts: Array<{ text: string; mean: number }>
 }
 
 type BenchmarkErrorResult = {
@@ -30,6 +32,19 @@ type BenchmarkErrorResult = {
     message: string
     stack?: string
   }
+}
+
+async function writeStdoutAndExit(output: string, exitCode = 0) {
+  await new Promise<void>((resolve, reject) => {
+    process.stdout.write(output, (error) => {
+      if (error) {
+        reject(error)
+        return
+      }
+      resolve()
+    })
+  })
+  app.exit(exitCode)
 }
 
 function getMimeType(filePath: string) {
@@ -79,6 +94,7 @@ async function detectInMain(imagePath: string): Promise<DetectionResult> {
   return {
     durationMs: performance.now() - start,
     texts: result.texts.map(({ text, mean }) => ({ text, mean })),
+    rawTexts: (result.rawTexts || []).map(({ text, mean }) => ({ text, mean })),
   }
 }
 
@@ -227,6 +243,7 @@ async function runMainBenchmark(imagePath: string, iterations: number, warmupIte
     steadyStateDurationsMs,
     durationsMs: steadyStateDurationsMs,
     texts: lastDetection?.texts || [],
+    rawTexts: lastDetection?.rawTexts || [],
   }
 }
 
@@ -271,8 +288,8 @@ async function runCliMode(args: ReturnType<typeof parseArgs>) {
       if (!mainResult.texts.length) {
         throw new Error('Main thread OCR returned no text lines.')
       }
-      console.log(
-        JSON.stringify(
+      await writeStdoutAndExit(
+        `${JSON.stringify(
           {
             rendererWasm: rendererResults.find(result => result.mode === 'renderer-wasm'),
             rendererWebgpu: rendererResults.find(result => result.mode === 'renderer-webgpu'),
@@ -280,13 +297,12 @@ async function runCliMode(args: ReturnType<typeof parseArgs>) {
           },
           null,
           2,
-        ),
+        )}\n`,
       )
     } else {
-      console.log(JSON.stringify(rendererResults[0], null, 2))
+      await writeStdoutAndExit(`${JSON.stringify(rendererResults[0], null, 2)}\n`)
     }
     win.destroy()
-    app.exit(0)
     return true
   }
 
@@ -306,9 +322,8 @@ async function runCliMode(args: ReturnType<typeof parseArgs>) {
     benchmarkResults.main = await runMainBenchmark(imagePath, args.iterations)
   }
 
-  console.log(JSON.stringify(benchmarkResults, null, 2))
+  await writeStdoutAndExit(`${JSON.stringify(benchmarkResults, null, 2)}\n`)
   win.destroy()
-  app.exit(0)
   return true
 }
 
@@ -331,8 +346,7 @@ async function runMainThreadCliMode(args: ReturnType<typeof parseArgs>) {
   }
 
   const benchmarkResult = await runMainBenchmark(imagePath, args.iterations)
-  console.log(JSON.stringify({ main: benchmarkResult }, null, 2))
-  app.exit(0)
+  await writeStdoutAndExit(`${JSON.stringify({ main: benchmarkResult }, null, 2)}\n`)
   return true
 }
 

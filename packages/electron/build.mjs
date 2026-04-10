@@ -7,7 +7,7 @@ const rootDir = path.dirname(fileURLToPath(import.meta.url))
 const outdir = path.join(rootDir, 'build')
 const assetsDir = path.join(outdir, 'assets')
 const wasmDir = path.join(outdir, 'wasm')
-const workspaceRoot = path.join(rootDir, '../../..')
+const workspaceRoot = path.join(rootDir, '../..')
 const localAlias = {
   "@gutenye/ocr-browser": path.join(workspaceRoot, "packages/browser/src/index.ts"),
   "@repeato/ocr": path.join(workspaceRoot, "packages/node/src/index.ts"),

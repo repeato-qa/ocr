@@ -55,22 +55,25 @@ jobs:
       - name: Install workspace dependencies
         run: npm install
 
+      - name: Run Electron asset regression tests
+        run: npm run -w packages/electron test:assets
+
       - name: Package Electron app
-        run: npm run -w packages/electron/example package
+        run: npm run -w packages/electron package
 
       - name: Run packaged Electron smoke test (Linux)
         if: runner.os == 'Linux'
-        run: xvfb-run -a npm run -w packages/electron/example test:smoke:packaged
+        run: xvfb-run -a npm run -w packages/electron test:smoke:packaged
 
       - name: Run packaged Electron smoke test
         if: runner.os != 'Linux'
-        run: npm run -w packages/electron/example test:smoke:packaged
+        run: npm run -w packages/electron test:smoke:packaged
 
       - name: Upload packaged artifact
         uses: actions/upload-artifact@v6
         with:
           name: gutenocr-electron-${{ matrix.target }}
-          path: temp/electron-example-package/dist/
+          path: temp/electron-package/dist/
 
   publish-node-package:
     name: Publish @repeato/ocr
