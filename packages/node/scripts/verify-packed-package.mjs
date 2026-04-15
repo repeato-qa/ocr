@@ -54,18 +54,37 @@ function quoteWindowsArg(value) {
 }
 
 function parsePackOutput(output) {
-  const multilineStart = output.indexOf('\n[')
-  const compactStart = output.indexOf('[{')
-  const startIndex = multilineStart >= 0 ? multilineStart + 1 : compactStart
-  const multilineEnd = output.lastIndexOf('\n]')
-  const compactEnd = output.lastIndexOf(']')
-  const endIndex = multilineEnd >= 0 ? multilineEnd + 2 : compactEnd + 1
+  const startIndexes = []
 
-  if (startIndex < 0 || endIndex <= startIndex) {
-    throw new Error(`Could not locate npm pack JSON output in:\n${output}`)
+  for (let index = output.indexOf('['); index >= 0; index = output.indexOf('[', index + 1)) {
+    startIndexes.push(index)
   }
 
-  return JSON.parse(output.slice(startIndex, endIndex))
+  const endIndexes = []
+  for (let index = output.lastIndexOf(']'); index >= 0; index = output.lastIndexOf(']', index - 1)) {
+    endIndexes.push(index)
+  }
+
+  for (const startIndex of startIndexes) {
+    for (const endIndex of endIndexes) {
+      if (endIndex <= startIndex) {
+        continue
+      }
+
+      const candidate = output.slice(startIndex, endIndex + 1)
+
+      try {
+        const parsed = JSON.parse(candidate)
+        if (Array.isArray(parsed) && parsed.every(entry => typeof entry?.filename === 'string')) {
+          return parsed
+        }
+      } catch {
+        // Keep scanning until we find the actual npm pack JSON payload.
+      }
+    }
+  }
+
+  throw new Error(`Could not locate npm pack JSON output in:\n${output}`)
 }
 
 let tarballPath = ''
