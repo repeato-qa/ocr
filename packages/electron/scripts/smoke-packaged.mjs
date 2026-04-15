@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
+import { RequiredWindowsRuntimeDlls, getWindowsRuntimeDirName } from '../../node/scripts/windows-runtime.mjs'
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url))
 const packageDir = path.resolve(rootDir, '..')
@@ -24,10 +25,12 @@ if (linuxRunAsNode) {
   assert.ok(fs.existsSync(smokeScriptPath), `Missing packaged smoke script at ${smokeScriptPath}`)
 }
 
+assertWindowsRuntimeFiles(metadata)
+
 const result = spawnSync(executablePath, executableArgs, {
   encoding: 'utf8',
   env: {
-    ...getSpawnEnv(),
+    ...getSmokeEnv(executablePath),
     OMP_THREAD_LIMIT: '1',
     OMP_NUM_THREADS: '1',
     ...(process.platform === 'linux'
@@ -120,5 +123,36 @@ function getSpawnEnv() {
     }
     env[key] = process.env[key]
   }
+  return env
+}
+
+function assertWindowsRuntimeFiles(currentMetadata) {
+  if (currentMetadata.platform !== 'win32') {
+    return
+  }
+
+  const runtimeDir = path.join(currentMetadata.packagedAppDir, 'resources', 'app', 'build', 'runtime', getWindowsRuntimeDirName(currentMetadata.arch))
+  for (const dllName of RequiredWindowsRuntimeDlls) {
+    const dllPath = path.join(runtimeDir, dllName)
+    assert.ok(fs.existsSync(dllPath), `Missing packaged Windows OCR runtime DLL ${dllName} at ${dllPath}`)
+  }
+}
+
+function getSmokeEnv(executablePath) {
+  if (process.platform !== 'win32') {
+    return getSpawnEnv()
+  }
+
+  const systemRoot = process.env.SystemRoot || 'C:\\Windows'
+  const env = getSpawnEnv()
+  const pathKey = Object.keys(env).find(key => key.toLowerCase() === 'path') || 'Path'
+
+  env.SystemRoot = systemRoot
+  env.windir = process.env.windir || systemRoot
+  env.ComSpec = process.env.ComSpec || path.join(systemRoot, 'System32', 'cmd.exe')
+  env.TEMP = process.env.TEMP || path.dirname(executablePath)
+  env.TMP = process.env.TMP || path.dirname(executablePath)
+  env[pathKey] = [path.dirname(executablePath), path.join(systemRoot, 'System32'), systemRoot].join(';')
+
   return env
 }

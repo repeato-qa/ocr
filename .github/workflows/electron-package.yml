@@ -55,6 +55,10 @@ jobs:
       - name: Install workspace dependencies
         run: npm install
 
+      - name: Verify Windows node package tarball
+        if: runner.os == 'Windows'
+        run: npm run -w @repeato/ocr pack:verify
+
       - name: Run Electron asset regression tests
         if: matrix.target == 'darwin-arm64'
         run: npm run -w packages/electron test:assets
