@@ -242,7 +242,7 @@ function extractFirstJsonObject(output) {
   assert.fail(`Expected a complete JSON object, got:\n${output}`)
 }
 
-test('login-screen asset OCR extracts expected copy', async () => {
+test('negative-text fixture keeps inverted login copy detectable', async () => {
   const text = await runMainBenchmark('./test-assets/negative text different sizes.jpeg')
 
   assert.match(text, /positive text/)
@@ -251,6 +251,19 @@ test('login-screen asset OCR extracts expected copy', async () => {
   assert.match(text, /Email or Customer Code/)
   assert.match(text, /Forgot Password\?/)
   assert.match(text, /Log in/)
+})
+
+test('login-screen fixture detects the LOGIN button label', async () => {
+  const detection = await runMainBenchmarkDetection('./test-assets/login-screen.jpeg')
+  const texts = detection.texts.map((line) => line.text)
+  const rawTexts = detection.rawTexts.map((line) => line.text)
+
+  assert.ok(texts.includes('Repeato Demo App'))
+  assert.ok(texts.includes('Secure sign in'))
+  assert.ok(texts.includes('Email *'))
+  assert.ok(texts.includes('Password *'))
+  assert.ok(texts.includes('LOGIN'))
+  assert.ok(rawTexts.includes('LOGIN'))
 })
 
 test('markets-screen asset OCR extracts expected market labels', async () => {
