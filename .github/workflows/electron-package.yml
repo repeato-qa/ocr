@@ -64,10 +64,9 @@ jobs:
         shell: pwsh
         run: |
           Set-Location packages/node
-          npm pack --json | Tee-Object -Variable packOutput | Out-Null
-          $packJson = ($packOutput -join "`n") | ConvertFrom-Json
+          $tarballName = node -e "const { execSync } = require('node:child_process'); const output = execSync('npm pack', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] }); const lines = output.trim().split(/\r?\n/).filter(Boolean); process.stdout.write(lines[lines.length - 1]);"
           New-Item -ItemType Directory -Force -Path ../../temp/npm-package | Out-Null
-          Move-Item -Force $packJson[0].filename ../../temp/npm-package/
+          Move-Item -Force $tarballName ../../temp/npm-package/
 
       - name: Upload Windows node package tarball
         if: runner.os == 'Windows'

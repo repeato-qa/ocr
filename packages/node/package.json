@@ -8,7 +8,7 @@
     "onnxruntime",
     "node"
   ],
-  "version": "1.5.11",
+  "version": "1.5.12",
   "type": "module",
   "main": "./build/node/index.js",
   "types": "./build/node/src/index.d.ts",
