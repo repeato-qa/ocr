@@ -12,6 +12,8 @@ const workspaceRoot = path.resolve(packageDir, '../..')
 const verifyDir = path.join(workspaceRoot, 'temp', 'npm-release-check')
 const fixturePath = path.join(workspaceRoot, 'packages', 'electron', 'test-assets', 'login-screen.jpeg')
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm'
+const explicitTarballPath = process.env.REPEATO_OCR_TARBALL_PATH
+const shouldVerifyWindowsRuntime = process.platform === 'win32' || process.env.REPEATO_OCR_VERIFY_WINDOWS_RUNTIME === '1'
 
 async function run(command, args, cwd) {
   return await runWithEnv(command, args, cwd, getBaseEnv())
@@ -93,9 +95,13 @@ try {
   await fs.rm(verifyDir, { recursive: true, force: true })
   await fs.mkdir(verifyDir, { recursive: true })
 
-  const packOutput = await run(npmCommand, ['pack', '--json'], packageDir)
-  const [{ filename }] = parsePackOutput(packOutput)
-  tarballPath = path.join(packageDir, filename)
+  if (explicitTarballPath) {
+    tarballPath = path.resolve(explicitTarballPath)
+  } else {
+    const packOutput = await run(npmCommand, ['pack', '--json'], packageDir)
+    const [{ filename }] = parsePackOutput(packOutput)
+    tarballPath = path.join(packageDir, filename)
+  }
 
   await run(npmCommand, ['init', '-y'], verifyDir)
   await run(npmCommand, ['install', tarballPath, 'sharp@0.34.5', '--legacy-peer-deps'], verifyDir)
@@ -140,13 +146,13 @@ try {
   process.stdout.write(`${verifyOutput}\n`)
 } finally {
   await fs.rm(verifyDir, { recursive: true, force: true })
-  if (tarballPath) {
+  if (tarballPath && !explicitTarballPath) {
     await fs.rm(tarballPath, { force: true })
   }
 }
 
 async function assertWindowsPackageIsSelfContained(installedPackageDir) {
-  if (process.platform !== 'win32') {
+  if (!shouldVerifyWindowsRuntime) {
     return
   }
 
