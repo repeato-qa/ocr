@@ -60,8 +60,13 @@ await fs.writeFile(
 await fs.writeFile(
   path.join(packageDir, 'build/node/electron.js'),
   [
-    "export { default } from './index.js'",
-    "export * from './index.js'",
+    "import moduleExports from './electron.cjs'",
+    'const defaultExport = moduleExports?.default ?? moduleExports',
+    'export const create = (...args) => defaultExport.create(...args)',
+    'export const registerBackend = moduleExports.registerBackend',
+    'export const FileUtilsBase = moduleExports.FileUtilsBase',
+    'export const ImageRawBase = moduleExports.ImageRawBase',
+    'export default defaultExport',
     '',
   ].join('\n'),
 )
