@@ -53,10 +53,7 @@ export function resolveWindowsRuntimeDllPaths() {
     }
   }
 
-  return uniq([
-    ...resolved,
-    ...collectDllsFromDirs(resolved.map(filePath => path.dirname(filePath))),
-  ])
+  return uniq(resolved)
 }
 
 /**
@@ -204,36 +201,6 @@ function findDllInDirs(dllName, candidateDirs) {
       return candidatePath
     }
   }
-}
-
-/**
- * @param {string[]} directories
- * @returns {string[]}
- */
-function collectDllsFromDirs(directories) {
-  /** @type {string[]} */
-  const dllPaths = []
-
-  for (const directory of uniq(directories)) {
-    /** @type {string[]} */
-    let entries = []
-
-    try {
-      entries = fs.readdirSync(directory)
-    } catch {
-      continue
-    }
-
-    for (const entry of entries) {
-      if (!entry.toLowerCase().endsWith('.dll')) {
-        continue
-      }
-
-      dllPaths.push(path.join(directory, entry))
-    }
-  }
-
-  return dllPaths
 }
 
 /**
