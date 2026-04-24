@@ -167,7 +167,7 @@ async function assertWindowsPackageIsSelfContained(installedPackageDir) {
 }
 
 async function assertWindowsOnnxruntimeDirHasRuntimeDlls(cwd) {
-  if (!shouldVerifyWindowsRuntime) {
+  if (!shouldVerifyWindowsRuntime || process.platform !== 'win32') {
     return
   }
 
