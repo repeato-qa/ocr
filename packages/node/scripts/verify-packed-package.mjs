@@ -1,7 +1,9 @@
+import fsSync from 'node:fs'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import assert from 'node:assert/strict'
 import { execFile } from 'node:child_process'
+import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 import { RequiredWindowsRuntimeDlls, getWindowsRuntimeDirName } from './windows-runtime.mjs'
@@ -144,6 +146,7 @@ try {
   )
 
   process.stdout.write(`${verifyOutput}\n`)
+  await assertWindowsOnnxruntimeDirHasRuntimeDlls(verifyDir)
 } finally {
   await fs.rm(verifyDir, { recursive: true, force: true })
   if (tarballPath && !explicitTarballPath) {
@@ -161,6 +164,31 @@ async function assertWindowsPackageIsSelfContained(installedPackageDir) {
     const dllPath = path.join(runtimeDir, dllName)
     assert.ok(await fileExists(dllPath), `Missing packaged Windows OCR runtime DLL ${dllName} at ${dllPath}`)
   }
+}
+
+async function assertWindowsOnnxruntimeDirHasRuntimeDlls(cwd) {
+  if (!shouldVerifyWindowsRuntime) {
+    return
+  }
+
+  const onnxruntimeDir = resolveInstalledOnnxruntimeDir(cwd)
+  for (const dllName of RequiredWindowsRuntimeDlls) {
+    const dllPath = path.join(onnxruntimeDir, dllName)
+    assert.ok(await fileExists(dllPath), `Missing staged ONNX runtime DLL ${dllName} at ${dllPath}`)
+  }
+}
+
+function resolveInstalledOnnxruntimeDir(cwd) {
+  const ocrPackageDir = path.join(cwd, 'node_modules', '@repeato', 'ocr')
+  const packageRequire = createRequire(path.join(ocrPackageDir, 'package.json'))
+  const onnxruntimePackagePath = packageRequire.resolve('onnxruntime-node/package.json')
+  const onnxruntimeDir = path.join(path.dirname(onnxruntimePackagePath), 'bin', 'napi-v6', process.platform, process.arch)
+
+  if (!pathExistsSync(onnxruntimeDir)) {
+    throw new Error(`Could not locate the installed ONNX runtime binary directory at ${onnxruntimeDir}`)
+  }
+
+  return onnxruntimeDir
 }
 
 function getVerificationEnv(cwd) {
@@ -218,4 +246,8 @@ async function fileExists(filePath) {
   } catch {
     return false
   }
+}
+
+function pathExistsSync(filePath) {
+  return fsSync.existsSync(filePath)
 }

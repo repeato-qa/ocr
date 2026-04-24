@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
+import { createRequire } from 'node:module'
 import { RequiredWindowsRuntimeDlls, getWindowsRuntimeDirName } from '../../node/scripts/windows-runtime.mjs'
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url))
@@ -60,6 +61,8 @@ assert.match(output, /Secure sign in/)
 assert.match(output, /Email \*/)
 assert.match(output, /Password \*/)
 assert.match(output, /LOGIN/)
+
+assertWindowsOnnxruntimeFiles(metadata)
 
 console.log(output.trim())
 console.log('Packaged Electron smoke test passed')
@@ -136,6 +139,33 @@ function assertWindowsRuntimeFiles(currentMetadata) {
     const dllPath = path.join(runtimeDir, dllName)
     assert.ok(fs.existsSync(dllPath), `Missing packaged Windows OCR runtime DLL ${dllName} at ${dllPath}`)
   }
+}
+
+function assertWindowsOnnxruntimeFiles(currentMetadata) {
+  if (currentMetadata.platform !== 'win32') {
+    return
+  }
+
+  const onnxruntimeDir = resolvePackagedOnnxruntimeDir(currentMetadata)
+
+  for (const dllName of RequiredWindowsRuntimeDlls) {
+    const dllPath = path.join(onnxruntimeDir, dllName)
+    assert.ok(fs.existsSync(dllPath), `Missing staged ONNX runtime DLL ${dllName} at ${dllPath}`)
+  }
+}
+
+function resolvePackagedOnnxruntimeDir(currentMetadata) {
+  const appRoot = path.join(currentMetadata.packagedAppDir, 'resources', 'app')
+  const ocrPackageDir = path.join(appRoot, 'node_modules', '@repeato', 'ocr')
+  const packageRequire = createRequire(path.join(ocrPackageDir, 'package.json'))
+  const onnxruntimePackagePath = packageRequire.resolve('onnxruntime-node/package.json')
+  const onnxruntimeDir = path.join(path.dirname(onnxruntimePackagePath), 'bin', 'napi-v6', currentMetadata.platform, currentMetadata.arch)
+
+  if (!fs.existsSync(onnxruntimeDir)) {
+    throw new Error(`Could not locate the packaged ONNX runtime binary directory at ${onnxruntimeDir}`)
+  }
+
+  return onnxruntimeDir
 }
 
 function getSmokeEnv(executablePath) {

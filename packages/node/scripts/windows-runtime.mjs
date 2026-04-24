@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-export const RequiredWindowsRuntimeDlls = ['msvcp140.dll', 'vcruntime140.dll', 'vcruntime140_1.dll']
+export const RequiredWindowsRuntimeDlls = ['msvcp140.dll', 'msvcp140_1.dll', 'vcruntime140.dll', 'vcruntime140_1.dll']
 export const OptionalWindowsRuntimeDlls = ['concrt140.dll', 'vcomp140.dll', 'libomp140.x86_64.dll']
 
 /**

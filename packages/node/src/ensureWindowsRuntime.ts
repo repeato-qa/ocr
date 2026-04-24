@@ -1,7 +1,8 @@
 import fs from 'node:fs'
+import { createRequire } from 'node:module'
 import path from 'node:path'
 
-const RequiredWindowsRuntimeDlls = ['msvcp140.dll', 'vcruntime140.dll', 'vcruntime140_1.dll']
+const RequiredWindowsRuntimeDlls = ['msvcp140.dll', 'msvcp140_1.dll', 'vcruntime140.dll', 'vcruntime140_1.dll']
 const RuntimeReadyKey = Symbol.for('repeato.ocr.windowsRuntimeReady')
 
 /**
@@ -24,8 +25,27 @@ export function ensureWindowsRuntimeDependencies() {
     throw new Error(`Missing packaged Windows OCR runtime DLLs in ${runtimeDir}: ${missingDlls.join(', ')}`)
   }
 
+  stageRuntimeDllsForOnnxruntime(runtimeDir)
   prependToPath(runtimeDir)
   globalState[RuntimeReadyKey] = true
+}
+
+/**
+ * Copies the required VC runtime DLLs next to onnxruntime_binding.node so
+ * Windows can resolve them without relying on PATH mutation alone.
+ *
+ * @param {string} runtimeDir
+ */
+function stageRuntimeDllsForOnnxruntime(runtimeDir: string) {
+  const onnxruntimeDir = resolveOnnxruntimeBinaryDir()
+
+  for (const fileName of RequiredWindowsRuntimeDlls) {
+    const sourcePath = path.join(runtimeDir, fileName)
+    const targetPath = path.join(onnxruntimeDir, fileName)
+    if (shouldCopyRuntimeDll(sourcePath, targetPath)) {
+      fs.copyFileSync(sourcePath, targetPath)
+    }
+  }
 }
 
 function resolveWindowsRuntimeDir() {
@@ -61,12 +81,48 @@ function prependToPath(runtimeDir: string) {
   }
 }
 
+function resolveOnnxruntimeBinaryDir() {
+  const moduleRequire = createRequire(resolveRequireEntryPath())
+  const onnxruntimePackagePath = moduleRequire.resolve('onnxruntime-node/package.json')
+  const onnxruntimeDir = path.join(path.dirname(onnxruntimePackagePath), 'bin', 'napi-v6', process.platform, process.arch)
+
+  if (!fs.existsSync(onnxruntimeDir)) {
+    throw new Error(`Could not locate the onnxruntime-node binary directory at ${onnxruntimeDir}`)
+  }
+
+  return onnxruntimeDir
+}
+
+/**
+ * Returns true when the staged runtime DLL is missing or differs in size from
+ * the packaged source copy.
+ *
+ * @param {string} sourcePath
+ * @param {string} targetPath
+ * @returns {boolean}
+ */
+function shouldCopyRuntimeDll(sourcePath: string, targetPath: string) {
+  if (!fs.existsSync(targetPath)) {
+    return true
+  }
+
+  return fs.statSync(sourcePath).size !== fs.statSync(targetPath).size
+}
+
 function resolveRootDir() {
   if (typeof __dirname === 'string') {
     return __dirname
   }
 
   return path.dirname(resolveCurrentFilePath())
+}
+
+function resolveRequireEntryPath() {
+  if (typeof __filename === 'string') {
+    return __filename
+  }
+
+  return resolveCurrentFilePath()
 }
 
 function resolveCurrentFilePath() {
