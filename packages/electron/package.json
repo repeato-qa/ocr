@@ -8,6 +8,8 @@
     "start": "npm run build && electron .",
     "benchmark": "npm run build && electron . --benchmark ./build/assets/cn-01.jpg --iterations 3",
     "benchmark:main": "npm run build && electron . --benchmark ./build/assets/cn-01.jpg --iterations 3 --mode main",
+    "benchmark:main:webgpu": "npm run build && electron . --benchmark ./build/assets/cn-01.jpg --iterations 3 --mode main-webgpu",
+    "benchmark:main:coreml": "npm run build && electron . --benchmark ./build/assets/cn-01.jpg --iterations 3 --mode main-coreml",
     "benchmark:renderer": "npm run build && electron . --benchmark ./build/assets/cn-01.jpg --iterations 3 --mode renderer-wasm",
     "benchmark:renderer:wasm": "npm run build && electron . --benchmark ./build/assets/cn-01.jpg --iterations 3 --mode renderer-wasm",
     "benchmark:renderer:webgpu": "npm run build && electron . --benchmark ./build/assets/cn-01.jpg --iterations 3 --mode renderer-webgpu",
@@ -15,6 +17,7 @@
     "test:assets": "npm run build && node --test ./tests/ocr-assets.test.mjs",
     "test:smoke": "npm run build && electron . --smoke ./build/assets/cn-01.jpg",
     "test:smoke:main": "npm run build && electron . --smoke ./build/assets/cn-01.jpg --mode main",
+    "test:smoke:main:coreml": "npm run build && electron . --smoke ./build/assets/cn-01.jpg --mode main-coreml",
     "test:smoke:packaged": "npm run package && node ./scripts/smoke-packaged.mjs",
     "test:smoke:renderer": "npm run build && electron . --smoke ./build/assets/cn-01.jpg --mode renderer"
   },

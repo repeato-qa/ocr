@@ -3,8 +3,9 @@ export {}
 declare global {
   interface Window {
     electronOcr: {
-      detectInMain: (imagePath: string) => Promise<BenchmarkDetection>
+      detectInMain: (imagePath: string, mode?: MainBenchmarkMode) => Promise<BenchmarkDetection>
       loadAsset: (name: string) => Promise<Uint8Array>
+      loadImageDataUrl: (imagePath: string) => Promise<string>
       openImage: () => Promise<{ imagePath: string; imageUrl: string } | null>
     }
     runRendererBenchmark: (request: BenchmarkRequest) => Promise<BenchmarkResult>
@@ -23,7 +24,9 @@ type BenchmarkDetection = {
   rawTexts: DetectionLine[]
 }
 
-type BenchmarkMode = 'main' | 'renderer' | 'renderer-wasm' | 'renderer-webgl' | 'renderer-webgpu' | 'compare'
+type MainBenchmarkMode = 'main' | 'main-webgpu' | 'main-coreml'
+
+type BenchmarkMode = MainBenchmarkMode | 'renderer' | 'renderer-wasm' | 'renderer-webgl' | 'renderer-webgpu' | 'compare'
 
 type BenchmarkRequest = {
   imagePath?: string

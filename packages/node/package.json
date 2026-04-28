@@ -1,14 +1,15 @@
 {
   "name": "@repeato/ocr",
-  "description": "Repeato OCR for Node.js and Electron main processes, based on PaddleOCR and ONNX Runtime",
+  "description": "Repeato OCR for Node.js main threads and Electron renderers, based on PaddleOCR and ONNX Runtime",
   "keywords": [
     "ocr",
     "paddleocr",
     "typescript",
     "onnxruntime",
-    "node"
+    "node",
+    "electron"
   ],
-  "version": "1.5.16",
+  "version": "1.5.17",
   "type": "module",
   "main": "./build/node/index.js",
   "types": "./build/node/src/index.d.ts",
@@ -29,10 +30,10 @@
       "default": "./build/node/index.js"
     },
     "./electron": {
-      "types": "./build/node/src/electron.d.ts",
+      "types": "./build/browser/src/electron.d.ts",
       "require": "./build/node/electron.cjs",
-      "import": "./build/node/electron.js",
-      "default": "./build/node/electron.js"
+      "import": "./build/browser/src/electron.js",
+      "default": "./build/browser/src/electron.js"
     },
     "./package.json": "./package.json"
   },
@@ -42,7 +43,7 @@
     "!**/__tests__"
   ],
   "scripts": {
-    "build": "node -e \"require('node:fs').rmSync('build', { recursive: true, force: true })\" && npx --no-install tsc --project tsconfig.build.json && npx --no-install tsc-alias --project tsconfig.build.json && node ./scripts/bundle-node-package.mjs && node ./scripts/copy-model-assets.mjs && node ./scripts/copy-windows-runtime-assets.mjs",
+    "build": "node -e \"require('node:fs').rmSync('build', { recursive: true, force: true })\" && npx --no-install tsc --project tsconfig.build.json && npx --no-install tsc-alias --project tsconfig.build.json && npx --no-install tsc --project ../browser/tsconfig.build.json && npx --no-install tsc-alias --project ../browser/tsconfig.build.json && node ./scripts/copy-browser-build.mjs && node ./scripts/bundle-node-package.mjs && node ./scripts/copy-model-assets.mjs && node ./scripts/copy-windows-runtime-assets.mjs",
     "test:exports": "npm run build && node --test ./tests/electron-exports.test.mjs",
     "pack:verify": "node ./scripts/verify-packed-package.mjs",
     "prepack": "node -e \"require('node:fs').copyFileSync('../../README.md', 'README.md')\" && npm run build",
@@ -50,7 +51,8 @@
   },
   "dependencies": {
     "@gutenye/ocr-common": "^1.2.0",
-    "onnxruntime-node": "1.22.0-rev"
+    "onnxruntime-node": "1.22.0-rev",
+    "onnxruntime-web": "^1.17.3"
   },
   "peerDependencies": {
     "sharp": "^0.34.5"

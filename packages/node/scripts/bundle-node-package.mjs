@@ -28,13 +28,13 @@ await Promise.all([
     tsconfig: path.join(workspaceRoot, 'tsconfig.json'),
   }),
   build({
-    entryPoints: [path.join(packageDir, 'src/electron.ts')],
+    entryPoints: [path.join(workspaceRoot, 'packages/browser/src/electron.ts')],
     outfile: path.join(packageDir, 'build/node/electron.cjs'),
     bundle: true,
     platform: 'node',
     format: 'cjs',
     target: 'node20',
-    external: ['onnxruntime-node', 'sharp'],
+    external: ['onnxruntime-web/webgpu'],
     logOverride: {
       'empty-import-meta': 'silent',
     },

@@ -1,8 +1,8 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
 contextBridge.exposeInMainWorld('electronOcr', {
-  async detectInMain(imagePath: string) {
-    return await ipcRenderer.invoke('ocr:detect-main', imagePath)
+  async detectInMain(imagePath: string, mode: 'main' | 'main-webgpu' | 'main-coreml' = 'main') {
+    return await ipcRenderer.invoke('ocr:detect-main', imagePath, mode)
   },
   async loadAsset(name: string) {
     return await ipcRenderer.invoke('ocr:load-asset', name)

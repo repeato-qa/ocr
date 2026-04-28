@@ -21,6 +21,8 @@
         <button id="run-renderer-webgl" type="button" disabled>Run Renderer WebGL (Experimental)</button>
         <button id="run-renderer-webgpu" type="button" disabled>Run Renderer WebGPU</button>
         <button id="run-main" type="button" disabled>Run Main</button>
+        <button id="run-main-webgpu" type="button" disabled>Run Main WebGPU (Experimental)</button>
+        <button id="run-main-coreml" type="button" disabled>Run Main CoreML (macOS)</button>
         <button id="run-compare" type="button" disabled>Compare All</button>
       </section>
       <section class="status-grid">
@@ -49,10 +51,20 @@
           <p id="main-status">Idle</p>
           <pre id="main-output"></pre>
         </div>
+        <div class="panel">
+          <h2>Main Thread WebGPU (Experimental)</h2>
+          <p id="main-webgpu-status">Idle</p>
+          <pre id="main-webgpu-output"></pre>
+        </div>
+        <div class="panel">
+          <h2>Main Thread CoreML (macOS)</h2>
+          <p id="main-coreml-status">Idle</p>
+          <pre id="main-coreml-output"></pre>
+        </div>
       </section>
       <section class="panel compare-panel">
         <h2>Comparison</h2>
-        <pre id="compare-output">Run the supported modes to compare results. WebGL remains available as an explicit experimental check.</pre>
+        <pre id="compare-output">Run the supported modes to compare renderer versus main-thread CPU, WebGPU, and CoreML results. WebGL remains available as an explicit experimental check.</pre>
       </section>
     </main>
     <script type="module" src="./renderer.js"></script>

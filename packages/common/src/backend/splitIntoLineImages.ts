@@ -1,4 +1,5 @@
 import cv from '@techstark/opencv-js'
+// @ts-ignore js-clipper does not ship TypeScript declarations
 import clipper from 'js-clipper'
 import { ImageRaw } from '#common/backend'
 import type { LineImage, ImageRaw as ImageRawType } from '#common/types'

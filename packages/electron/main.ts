@@ -3,8 +3,10 @@ import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 import Ocr from '@repeato/ocr'
+import type { InferenceSession } from 'onnxruntime-common'
 
-type BenchmarkMode = 'main' | 'renderer' | 'renderer-wasm' | 'renderer-webgl' | 'renderer-webgpu' | 'compare'
+type BenchmarkMode = 'main' | 'main-webgpu' | 'main-coreml' | 'renderer' | 'renderer-wasm' | 'renderer-webgl' | 'renderer-webgpu' | 'compare'
+type MainBenchmarkMode = 'main' | 'main-webgpu' | 'main-coreml'
 type RendererBenchmarkMode = 'renderer-wasm' | 'renderer-webgl' | 'renderer-webgpu'
 
 type DetectionBox = [[number, number], [number, number], [number, number], [number, number]]
@@ -42,6 +44,20 @@ type BenchmarkErrorResult = {
   }
 }
 
+async function safeRunMainBenchmark(imagePath: string, iterations: number, mode: MainBenchmarkMode, warmupIterations = 1) {
+  try {
+    return await runMainBenchmark(imagePath, iterations, mode, warmupIterations)
+  } catch (error) {
+    return {
+      mode,
+      error: {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      },
+    } satisfies BenchmarkErrorResult
+  }
+}
+
 async function writeStdoutAndExit(output: string, exitCode = 0) {
   await new Promise<void>((resolve, reject) => {
     process.stdout.write(output, (error) => {
@@ -72,7 +88,35 @@ function getMimeType(filePath: string) {
   }
 }
 
-let mainThreadOcr: Awaited<ReturnType<typeof Ocr.create>> | undefined
+const mainThreadOcr = new Map<MainBenchmarkMode, Promise<Awaited<ReturnType<typeof Ocr.create>>>>()
+
+function isMainBenchmarkModeSupported(mode: MainBenchmarkMode) {
+  if (mode === 'main-coreml') {
+    return process.platform === 'darwin'
+  }
+
+  return true
+}
+
+function getMainBenchmarkProvider(mode: MainBenchmarkMode): InferenceSession.SessionOptions['executionProviders'] {
+  if (mode === 'main-webgpu') {
+    return ['webgpu']
+  }
+
+  if (mode === 'main-coreml') {
+    return [{ name: 'coreml', useCPUAndGPU: true }]
+  }
+
+  return ['cpu']
+}
+
+function assertMainBenchmarkModeSupported(mode: MainBenchmarkMode) {
+  if (isMainBenchmarkModeSupported(mode)) {
+    return
+  }
+
+  throw new Error(`${mode} is available only on macOS.`)
+}
 
 function getBuildPath(...parts: string[]) {
   return path.join(app.getAppPath(), 'build', ...parts)
@@ -86,13 +130,22 @@ function getBundledModels() {
   }
 }
 
-async function getMainThreadOcr() {
-  if (!mainThreadOcr) {
-    mainThreadOcr = await Ocr.create({
-      models: getBundledModels(),
-    })
+async function getMainThreadOcr(mode: MainBenchmarkMode) {
+  assertMainBenchmarkModeSupported(mode)
+
+  if (!mainThreadOcr.has(mode)) {
+    mainThreadOcr.set(
+      mode,
+      Ocr.create({
+        models: getBundledModels(),
+        onnxOptions: {
+          executionProviders: getMainBenchmarkProvider(mode),
+        },
+      }),
+    )
   }
-  return mainThreadOcr
+
+  return await mainThreadOcr.get(mode)!
 }
 
 function cloneDetectionBox(box: DetectionBox): DetectionBox {
@@ -107,8 +160,8 @@ function toDetectionLine({ text, mean, box }: { text: string; mean: number; box?
   }
 }
 
-async function detectInMain(imagePath: string): Promise<DetectionResult> {
-  const ocr = await getMainThreadOcr()
+async function detectInMain(imagePath: string, mode: MainBenchmarkMode = 'main'): Promise<DetectionResult> {
+  const ocr = await getMainThreadOcr(mode)
   const start = performance.now()
   const result = await ocr.detect(imagePath)
   return {
@@ -152,11 +205,15 @@ function parseArgs(argv: string[]) {
 }
 
 function shouldUseMainThreadCliMode(args: ReturnType<typeof parseArgs>) {
-  return Boolean((args.benchmarkImage || args.smokeImage) && args.mode === 'main')
+  return Boolean((args.benchmarkImage || args.smokeImage) && (args.mode === 'main' || args.mode === 'main-webgpu' || args.mode === 'main-coreml'))
 }
 
 function configureCliMode(args: ReturnType<typeof parseArgs>) {
   if (!shouldUseMainThreadCliMode(args)) {
+    return
+  }
+
+  if (args.mode === 'main-webgpu' || args.mode === 'main-coreml') {
     return
   }
 
@@ -240,21 +297,21 @@ async function safeRunRendererBenchmark(win: BrowserWindow, imagePath: string, i
   }
 }
 
-async function runMainBenchmark(imagePath: string, iterations: number, warmupIterations = 1): Promise<BenchmarkResult> {
+async function runMainBenchmark(imagePath: string, iterations: number, mode: MainBenchmarkMode = 'main', warmupIterations = 1): Promise<BenchmarkResult> {
   let coldStartDetection: DetectionResult | undefined
   for (let index = 0; index < warmupIterations; index += 1) {
-    coldStartDetection = await detectInMain(imagePath)
+    coldStartDetection = await detectInMain(imagePath, mode)
   }
 
   const steadyStateDurationsMs: number[] = []
   let lastDetection: DetectionResult | undefined
   for (let index = 0; index < iterations; index += 1) {
-    lastDetection = await detectInMain(imagePath)
+    lastDetection = await detectInMain(imagePath, mode)
     steadyStateDurationsMs.push(lastDetection.durationMs)
   }
 
   return {
-    mode: 'main',
+    mode,
     iterations,
     warmupIterations,
     coldStartDurationMs: coldStartDetection?.durationMs || 0,
@@ -278,10 +335,10 @@ async function runCliMode(args: ReturnType<typeof parseArgs>) {
   await ensureAssetsReady()
 
   if (args.smokeImage) {
-    if (mode === 'main') {
-      const result = await detectInMain(imagePath)
+    if (mode === 'main' || mode === 'main-webgpu' || mode === 'main-coreml') {
+      const result = await detectInMain(imagePath, mode)
       if (!result.texts.length) {
-        throw new Error('Main thread OCR returned no text lines.')
+        throw new Error(`${mode} OCR returned no text lines.`)
       }
       console.log(formatDetection(result))
       app.exit(0)
@@ -304,16 +361,17 @@ async function runCliMode(args: ReturnType<typeof parseArgs>) {
     }
 
     if (mode === 'compare') {
-      const mainResult = await runMainBenchmark(imagePath, 1)
-      if (!mainResult.texts.length) {
-        throw new Error('Main thread OCR returned no text lines.')
-      }
+      const mainResult = await safeRunMainBenchmark(imagePath, 1, 'main')
+      const mainWebgpuResult = await safeRunMainBenchmark(imagePath, 1, 'main-webgpu')
+      const mainCoremlResult = await safeRunMainBenchmark(imagePath, 1, 'main-coreml')
       await writeStdoutAndExit(
         `${JSON.stringify(
           {
             rendererWasm: rendererResults.find(result => result.mode === 'renderer-wasm'),
             rendererWebgpu: rendererResults.find(result => result.mode === 'renderer-webgpu'),
             main: mainResult,
+            mainWebgpu: mainWebgpuResult,
+            mainCoreml: mainCoremlResult,
           },
           null,
           2,
@@ -339,7 +397,13 @@ async function runCliMode(args: ReturnType<typeof parseArgs>) {
     benchmarkResults.rendererWebgpu = await safeRunRendererBenchmark(win, imagePath, args.iterations, 'renderer-webgpu')
   }
   if (mode === 'main' || mode === 'compare') {
-    benchmarkResults.main = await runMainBenchmark(imagePath, args.iterations)
+    benchmarkResults.main = await safeRunMainBenchmark(imagePath, args.iterations, 'main')
+  }
+  if (mode === 'main-webgpu' || mode === 'compare') {
+    benchmarkResults.mainWebgpu = await safeRunMainBenchmark(imagePath, args.iterations, 'main-webgpu')
+  }
+  if (mode === 'main-coreml' || mode === 'compare') {
+    benchmarkResults.mainCoreml = await safeRunMainBenchmark(imagePath, args.iterations, 'main-coreml')
   }
 
   await writeStdoutAndExit(`${JSON.stringify(benchmarkResults, null, 2)}\n`)
@@ -356,17 +420,17 @@ async function runMainThreadCliMode(args: ReturnType<typeof parseArgs>) {
   await ensureAssetsReady()
 
   if (args.smokeImage) {
-    const result = await detectInMain(imagePath)
+    const result = await detectInMain(imagePath, args.mode as MainBenchmarkMode)
     if (!result.texts.length) {
-      throw new Error('Main thread OCR returned no text lines.')
+      throw new Error(`${args.mode} OCR returned no text lines.`)
     }
     console.log(formatDetection(result))
     app.exit(0)
     return true
   }
 
-  const benchmarkResult = await runMainBenchmark(imagePath, args.iterations)
-  await writeStdoutAndExit(`${JSON.stringify({ main: benchmarkResult }, null, 2)}\n`)
+  const benchmarkResult = await safeRunMainBenchmark(imagePath, args.iterations, args.mode as MainBenchmarkMode)
+  await writeStdoutAndExit(`${JSON.stringify({ [args.mode === 'main-webgpu' ? 'mainWebgpu' : args.mode === 'main-coreml' ? 'mainCoreml' : 'main']: benchmarkResult }, null, 2)}\n`)
   return true
 }
 
@@ -379,8 +443,8 @@ async function main() {
     return
   }
 
-  ipcMain.handle('ocr:detect-main', async (_event, imagePath: string) => {
-    return await detectInMain(imagePath)
+  ipcMain.handle('ocr:detect-main', async (_event, imagePath: string, mode: MainBenchmarkMode = 'main') => {
+    return await detectInMain(imagePath, mode)
   })
 
   ipcMain.handle('ocr:load-asset', async (_event, name: string) => {

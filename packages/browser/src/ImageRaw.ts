@@ -90,8 +90,9 @@ export class ImageRaw extends ImageRawBase {
 }
 
 function canvasDrawImage(canvas: HTMLCanvasElement, image: CanvasImageSource, width?: number, height?: number) {
-  canvas.width = width || image.width
-  canvas.height = height || image.height
+  const sizedImage = image as CanvasImageSource & { width: number; height: number }
+  canvas.width = width || sizedImage.width
+  canvas.height = height || sizedImage.height
   const ctx = canvas.getContext('2d')!
   ctx.drawImage(image, 0, 0, canvas.width, canvas.height)
 }
