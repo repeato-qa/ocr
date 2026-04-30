@@ -9,7 +9,7 @@
     "node",
     "electron"
   ],
-  "version": "1.5.17",
+  "version": "1.5.18",
   "type": "module",
   "main": "./build/node/index.js",
   "types": "./build/node/src/index.d.ts",
