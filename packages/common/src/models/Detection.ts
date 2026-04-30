@@ -1,7 +1,7 @@
 import type { InferenceSession as InferenceSessionCommon, Tensor } from 'onnxruntime-common'
-import invariant from 'tiny-invariant'
 import { ImageRaw, InferenceSession, defaultModels, splitIntoLineImages } from '#common/backend'
 import type { BinarySource, ImageRawData, ImageRaw as ImageRawType, ModelCreateOptions, Size } from '#common/types'
+import { assert } from '../assert'
 import { ModelBase } from './ModelBase'
 
 const BASE_SIZE = 32
@@ -9,7 +9,7 @@ const BASE_SIZE = 32
 export class Detection extends ModelBase {
   static async create({ models, onnxOptions = {}, ...restOptions }: ModelCreateOptions) {
     const detectionPath = models?.detectionPath || defaultModels?.detectionPath
-    invariant(detectionPath, 'detectionPath is required')
+    assert(detectionPath, 'detectionPath is required')
     const model = await InferenceSession.create(normalizeBinarySource(detectionPath), onnxOptions)
     return new Detection({ model, options: restOptions })
   }

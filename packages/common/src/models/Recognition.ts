@@ -1,7 +1,7 @@
 import type { InferenceSession as InferenceSessionCommon, Tensor } from 'onnxruntime-common'
-import invariant from 'tiny-invariant'
 import { FileUtils, InferenceSession, defaultModels } from '#common/backend'
 import type { BinarySource, Box, Dictionary, Line, LineImage, ModelBaseConstructorArg, ModelCreateOptions } from '#common/types'
+import { assert } from '../assert'
 import { ModelBase } from './ModelBase'
 
 export class Recognition extends ModelBase {
@@ -9,9 +9,9 @@ export class Recognition extends ModelBase {
 
   static async create({ models, onnxOptions = {}, ...restOptions }: ModelCreateOptions) {
     const recognitionPath = models?.recognitionPath || defaultModels?.recognitionPath
-    invariant(recognitionPath, 'recognitionPath is required')
+    assert(recognitionPath, 'recognitionPath is required')
     const dictionaryPath = models?.dictionaryPath || defaultModels?.dictionaryPath
-    invariant(dictionaryPath, 'dictionaryPath is required')
+    assert(dictionaryPath, 'dictionaryPath is required')
     const model = await InferenceSession.create(normalizeBinarySource(recognitionPath), onnxOptions)
     const dictionaryText = await FileUtils.read(dictionaryPath)
     const dictionary = [...dictionaryText.split('\n'), ' ']

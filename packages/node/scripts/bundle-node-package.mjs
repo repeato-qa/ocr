@@ -41,6 +41,21 @@ await Promise.all([
     alias,
     tsconfig: path.join(workspaceRoot, 'tsconfig.json'),
   }),
+  build({
+    entryPoints: [path.join(workspaceRoot, 'packages/browser/src/electron.ts')],
+    outfile: path.join(packageDir, 'build/browser/src/electron.js'),
+    bundle: true,
+    platform: 'browser',
+    format: 'esm',
+    target: 'es2022',
+    sourcemap: true,
+    external: ['fs', 'path'],
+    logOverride: {
+      'empty-import-meta': 'silent',
+    },
+    alias,
+    tsconfig: path.join(workspaceRoot, 'tsconfig.json'),
+  }),
 ])
 
 await fs.writeFile(

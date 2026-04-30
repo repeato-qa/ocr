@@ -1,6 +1,6 @@
 import { ImageRawBase } from '@gutenye/ocr-common'
 import type { ImageRawData, LineImage, SizeOption } from '@gutenye/ocr-common'
-import invariant from 'tiny-invariant'
+import { assert } from './assert'
 
 export class ImageRaw extends ImageRawBase {
   data: Uint8ClampedArray
@@ -39,7 +39,7 @@ export class ImageRaw extends ImageRawBase {
   }
 
   async resize({ width, height }: SizeOption) {
-    invariant(width !== undefined || height !== undefined, 'both width and height are undefined')
+    assert(width !== undefined || height !== undefined, 'both width and height are undefined')
     const newWidth = width || Math.round((this.width / this.height) * height!)
     const newHeight = height || Math.round((this.height / this.width) * width!)
     const newCanvas = document.createElement('canvas')
