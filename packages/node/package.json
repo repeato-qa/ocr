@@ -31,6 +31,10 @@
     },
     "./electron": {
       "types": "./build/browser/src/electron.d.ts",
+      "node": {
+        "require": "./build/node/electron.cjs",
+        "import": "./build/node/electron.js"
+      },
       "require": "./build/node/electron.cjs",
       "import": "./build/browser/src/electron.js",
       "default": "./build/browser/src/electron.js"
