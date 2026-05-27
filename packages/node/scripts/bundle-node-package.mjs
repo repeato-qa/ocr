@@ -64,6 +64,7 @@ await fs.writeFile(
     "import moduleExports from './index.cjs'",
     'const defaultExport = moduleExports?.default ?? moduleExports',
     'export const create = (...args) => defaultExport.create(...args)',
+    'export const releaseAll = (...args) => defaultExport.releaseAll(...args)',
     'export const registerBackend = moduleExports.registerBackend',
     'export const FileUtilsBase = moduleExports.FileUtilsBase',
     'export const ImageRawBase = moduleExports.ImageRawBase',
