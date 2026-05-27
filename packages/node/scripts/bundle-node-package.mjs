@@ -58,6 +58,11 @@ await Promise.all([
   }),
 ])
 
+// IMPORTANT: This array is the ESM wrapper for the CJS bundle.
+// Every named export in packages/node/src/index.ts that should be available
+// to ESM consumers MUST also appear here. If you add a new export to index.ts
+// but forget to add it here, the export will exist in the CJS bundle but will
+// be silently missing from the ESM entry point (build/node/index.js).
 await fs.writeFile(
   path.join(packageDir, 'build/node/index.js'),
   [
