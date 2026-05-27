@@ -47,4 +47,11 @@ class Ocr extends BaseOcr {
 export * from '@gutenye/ocr-common'
 export const create = Ocr.create.bind(Ocr)
 
+/**
+ * Releases all live Ocr instances before process exit. Prevents the
+ * onnxruntime-node thread-pool mutex crash that occurs when native
+ * InferenceSession objects are garbage-collected during Node.js shutdown.
+ */
+export const releaseAll = () => Ocr.releaseAll()
+
 export default Ocr

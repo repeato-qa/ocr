@@ -71,4 +71,14 @@ export class ModelBase {
     const boxImage = await sourceImage.drawBox(lineImages)
     boxImage.write(`${debugOutputDir}/${path}`)
   }
+
+  /**
+   * Releases the underlying ONNX Runtime InferenceSession and its native
+   * resources. Must be called before process exit to avoid a mutex-lock crash
+   * caused by the onnxruntime-node thread pool being torn down while native
+   * session objects are still alive.
+   */
+  async release() {
+    await (this.#model as any).release?.()
+  }
 }
